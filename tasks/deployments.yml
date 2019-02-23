@@ -1,0 +1,78 @@
+---
+- name: Get current list of deployments
+  uri:
+    url: "https://{{ ansible_host }}/api/config/vm_lifecycle/tenants/tenant/admin/deployments?deep"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: GET
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    status_code: [ 200, 204 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+
+- set_fact:
+    existing_deployments: "{{ uri_results.content | regex_findall('<name>([^<]+)</name>') }}"
+    inventory_deployments: "{{ nfvis_deployments.keys() }}"
+
+- set_fact:
+    add_deployments: "{{ [ deploy ] if (deploy is defined and deploy) else (inventory_deployments | difference(existing_deployments)) | default([]) }}"
+    # change_deployments: "{{ inventory_deployments | intersect(existing_deployments) }}"
+
+- debug:
+    msg: "Deploying {{ add_deployments | join(',') }}"
+  when: add_deployments
+
+- name: Writing debug payload
+  copy:
+    content: "{{ lookup('template', 'deployment.j2') }}"
+    dest: "/tmp/{{ inventory_hostname }}_{{ deployment }}.xml"
+  loop: "{{ add_deployments | default([]) }}"
+  loop_control:
+    loop_var: deployment
+
+- name: Add deployments
+  uri:
+    url: "https://{{ ansible_host }}/api/config/vm_lifecycle/tenants/tenant/admin/deployments"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: POST
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    body: "{{ lookup('template', 'deployment.j2') }}"
+    status_code: [ 200,201 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+  loop: "{{ add_deployments | default([])  }}"
+  loop_control:
+    loop_var: deployment
+
+- debug: msg="{{ uri_results.results[0].msg }}"
+  when: uri_results.results[0] is defined
+
+# We can only deploy and undeploy.  Not modify
+#- name: Modify deployments
+#  uri:
+#    url: "https://{{ ansible_host }}/api/config/deployments/network/{{ network }}"
+#    user: "{{ nfvis_username }}"
+#    password: "{{ nfvis_password }}"
+#    method: PUT
+#    headers:
+#      Content-Type: "application/vnd.yang.data+xml"
+#    body: "{{ lookup('template', 'network.j2') }}"
+#    status_code: [ 200,201,204 ]
+#    return_content: yes
+#    validate_certs: no
+#  no_log: false  # Don't show output as your password will be on the URI string
+#  register: uri_results
+##  failed_when: false
+##  when: payload | length
+#  loop: "{{ change_deployments | default([]) }}"
+#  loop_control:
+#    loop_var: network
+#
+

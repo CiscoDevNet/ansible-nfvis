@@ -1,0 +1,79 @@
+---
+- set_fact:
+    payload: "{{ lookup('template', 'bridges.j2') }}"
+  delegate_to: localhost
+
+- copy:
+    content: "{{ payload }}"
+    dest: "/tmp/{{ inventory_hostname }}_bridges.xml"
+  delegate_to: localhost
+  when: payload | length
+
+- debug: msg="{{ nfvis_username }} {{ nfvis_password }}"
+  delegate_to: localhost
+
+- name: Push bridges to the device
+  uri:
+    url: "https://{{ inventory_hostname }}/api/config/bridges"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: POST
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    body: "{{ payload }}"
+    status_code: [ 200,201 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+  when: payload | length
+
+- debug: var=uri_results
+  when: payload | length
+
+- set_fact:
+    payload: "{{ lookup('template', 'networks.j2') }}"
+  delegate_to: localhost
+
+- copy:
+    content: "{{ payload }}"
+    dest: "/tmp/{{ inventory_hostname }}_networks.xml"
+  delegate_to: localhost
+  when: payload | length
+
+- name: Push networks to the device
+  uri:
+    url: "https://{{ inventory_hostname }}/api/config/networks"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: POST
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    body: "{{ payload }}"
+    status_code: [ 200,201 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+  failed_when: false
+  when: payload | length
+
+- name: Modify network
+  uri:
+    url: "https://{{ inventory_hostname }}/api/config/networks"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: POST
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    body: "{{ payload }}"
+    status_code: [ 200,201 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+  failed_when: false
+  when: payload | length
+
+- debug: var=uri_results
+  when: payload | length

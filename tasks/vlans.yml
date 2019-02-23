@@ -1,0 +1,58 @@
+---
+- name: Get current list of vlans
+  uri:
+    url: "https://{{ ansible_host }}/api/running/switch/vlan?deep"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: GET
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    status_code: [ 200 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+
+#- debug: var=uri_results
+
+- set_fact:
+    existing_vlans: "{{ uri_results.content | regex_findall('<vlan-id>([^<]+)</vlan-id>') | map('int') | list }}"
+    network_vlans: "{{ nfvis_networks.values() | map(attribute='vlan') | list }}"
+
+- set_fact:
+    all_vlans: "{{ network_vlans + nfvis_vlans | unique }}"
+
+- set_fact:
+    add_vlans: "{{ all_vlans | difference(existing_vlans) }}"
+    remove_vlans: "{{ all_vlans | intersect(existing_vlans) }}"
+
+- debug: msg="Adding VLANs {{ add_vlans | join(',') if add_vlans else 'none' }}"
+#- debug: var=existing_vlans
+#- debug: var=inventory_vlans
+#- debug: var=add_vlans
+
+#- meta: end_play
+
+#- copy:
+#    content: "{{ payload }}"
+#    dest: "/tmp/{{ inventory_hostname }}_vlans.xml"
+#  delegate_to: localhost
+#  when: payload | length
+
+- name: Add VLANs
+  uri:
+    url: "https://{{ ansible_host }}/api/running/switch"
+    user: "{{ nfvis_username }}"
+    password: "{{ nfvis_password }}"
+    method: POST
+    headers:
+      Content-Type: "application/vnd.yang.data+xml"
+    body: "{{ lookup('template', 'vlans.j2') }}"
+    status_code: [ 200,201 ]
+    return_content: yes
+    validate_certs: no
+  no_log: false  # Don't show output as your password will be on the URI string
+  register: uri_results
+  loop: "{{ add_vlans | default([])  }}"
+  loop_control:
+    loop_var: vlan_id

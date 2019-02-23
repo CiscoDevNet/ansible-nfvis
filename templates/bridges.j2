@@ -1,0 +1,9 @@
+{% if nfvis_bridges is defined %}
+<bridges xmlns="http://www.cisco.com/nfv/network">
+{% for bridge in nfvis_bridges %}
+    <bridge>
+        <name>{{ bridge }}</name>
+    </bridge>
+{% endfor %}
+</bridges>
+{%  endif %}{# bridges defined #}

@@ -1,0 +1,24 @@
+hostname {{ inventory_hostname.split('.')[0] }}
+!
+license smart enable
+!
+username {{ ansible_user }} privilege 15 secret {{ ansible_password }}
+crypto key generate rsa modulus 2048
+!
+interface GigabitEthernet1
+ vrf forwarding Mgmt-intf
+ ip address ${NICID_0_IP_ADDRESS} ${NICID_0_NETMASK}
+ negotiation auto
+ no mop enabled
+ no mop sysid
+!
+interface GigabitEthernet2
+ ip address {{ interfaces['GigabitEthernet2'].ip.address.primary.address }} {{ interfaces['GigabitEthernet2'].ip.address.primary.mask }}
+ no shut
+!
+ip route 0.0.0.0 0.0.0.0 {{ static_routes.global[0].fwd_list[0].fwd }}
+!
+line vty 0 4
+ login local
+ transport input ssh
+exit

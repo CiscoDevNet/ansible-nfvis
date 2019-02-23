@@ -1,0 +1,99 @@
+#jinja2: lstrip_blocks: True, trim_blocks: True
+<deployment>
+    <name>{{ nfvis.name }}</name>
+    <vm_group>
+        <name>{{ nfvis.name }}</name>
+        <image>{{ nfvis.image }}</image>
+        <flavor>{{ nfvis.flavor }}</flavor>
+        <vim_vm_name>{{ nfvis.name }}</vim_vm_name>
+        <bootup_time>{{ nfvis.bootup_time | default('-1') }}</bootup_time>
+        <recovery_wait_time>5</recovery_wait_time>
+        <interfaces>
+            {% set monitor_nicid = nfvis.monitor_nicid | default(0) %}
+            {% for interface in nfvis.interfaces %}
+            <interface>
+                <nicid>{{ interface.nicid }}</nicid>
+                <network>{{ interface.network }}</network>
+                {% if nfvis.proxy_port is defined and interface.nicid == monitor_nicid %}
+                <port_forwarding>
+                    <port>
+                        <type>ssh</type>
+                        <protocol>tcp</protocol>
+                        <vnf_port>22</vnf_port>
+                        <external_port_range>
+                            <start>{{ nfvis.proxy_port }}</start>
+                            <end>{{ nfvis.proxy_port }}</end>
+                        </external_port_range>
+                        <source_bridge>MGMT</source_bridge>
+                    </port>
+                </port_forwarding>
+                {% endif %}{# nfvis.proxy_port is defined #}
+                {% if interface.model is defined %}
+                <model>{{ interface.model }}</model>
+                {% endif %}{# interface.model #}
+            </interface>
+            {% endfor %}{# interface #}
+        </interfaces>
+        {% if nfvis.scaling is defined %}
+        <scaling>
+            <min_active>{{ nfvis.scaling.min_active }}</min_active>
+            <max_active>{{ nfvis.scaling.max_active }}</max_active>
+        </scaling>
+        {% endif %}{# scaling #}
+        {% if nfvis.config_data is defined %}
+        <config_data>
+            {% for item in nfvis.config_data %}
+            <configuration>
+                <dst>{{ item.dst }}</dst>
+                {%  if item.template is defined %}
+                {%  set template_file = role_path + '/templates/' + item.template %}
+                <data>{{ lookup('template', template_file) }}</data>
+                {%  else %}
+                {% for key, value in item.variables.items() | default({}) %}
+                <variable>
+                    <name>{{ key }}</name>
+                    <val>{{ value }}</val>
+                </variable>
+                {% endfor %}{# variables #}
+                {%  endif %}{# item.template is defined #}
+            </configuration>
+            {% endfor %}{# config_data.dst #}
+        </config_data>
+        {% endif %}{# config_data #}
+        <placement>
+            <type>zone_host</type>
+            <host>datastore1</host>
+        </placement>
+        <recovery_policy>
+            <action_on_recovery>REBOOT_ONLY</action_on_recovery>
+        </recovery_policy>
+        {% if nfvis.bootup_time is defined and nfvis.bootup_time >= 0 %}
+        <kpi_data>
+            <kpi>
+                <event_name>VM_ALIVE</event_name>
+                <metric_value>1</metric_value>
+                <metric_cond>GT</metric_cond>
+                <metric_type>UINT32</metric_type>
+                <metric_collector>
+                    <type>ICMPPing</type>
+                    <nicid>{{ nfvis.monitor_nicid | default('0') }}</nicid>
+                    <poll_frequency>3</poll_frequency>
+                    <polling_unit>seconds</polling_unit>
+                    <continuous_alarm>false</continuous_alarm>
+                </metric_collector>
+            </kpi>
+        </kpi_data>
+        <rules>
+            <admin_rules>
+                <rule>
+                    <event_name>VM_ALIVE</event_name>
+                    <action>ALWAYS log</action>
+                    <action>TRUE servicebooted.sh</action>
+                    <action>FALSE recover autohealing</action>
+                </rule>
+            </admin_rules>
+        </rules>
+        {% endif %}{# nfvis.monitor_nicid is defined #}
+    </vm_group>
+</deployment>
+

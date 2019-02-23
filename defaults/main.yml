@@ -1,0 +1,4 @@
+---
+# defaults file for nfvis
+nfvis_networks: {}
+nfvis_deployments: {}
