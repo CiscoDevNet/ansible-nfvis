@@ -12,10 +12,25 @@ interface GigabitEthernet1
  no mop enabled
  no mop sysid
 !
-interface GigabitEthernet2
- ip address {{ interfaces['GigabitEthernet2'].ip.address.primary.address }} {{ interfaces['GigabitEthernet2'].ip.address.primary.mask }}
+{% for key, value in interfaces.items() %}
+interface {{ key }}
+ {% if value.vlan is defined %}
+ encapsulation dot1Q {{ value.vlan }}
+ {% endif %}{# value.vlan is defined #}
+ {% if value.description is defined %}
+ description {{ interface_item.description }}
+ {% endif %}
+ {% if value.ip.primary.address is defined %}
+ ip address {{ value.ip.primary.address }} {{ value.ip.primary.mask }}
+ {% endif %}
+ {% if value.enabled is sameas true %}
  no shut
-!
+{% if value.vlan is defined %}
+interface {{ key | regex_replace('^([a-zA-Z0-9\/]+)\.[^a-zA-Z]+', '\\1') }}
+ no shut
+{%  endif %}{# enabled #}
+{%  endif %}{# value.vlan is defined #}
+{%  endfor %}{# interfaces #}
 ip route 0.0.0.0 0.0.0.0 {{ static_routes.global[0].fwd_list[0].fwd }}
 !
 line vty 0 4

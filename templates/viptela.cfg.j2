@@ -34,20 +34,20 @@ system
  personality             vedge
  device-model            vedge-cloud
  host-name               {{ inventory_hostname.split('.')[0] }}
-{%  if viptela.system_ip is defined %}
+{% if viptela.system_ip is defined %}
  system-ip               {{ viptela.system_ip }}
 {% endif %}{# viptela.system_ip is defined #}
-{%  if viptela.domain_id is defined %}
+{% if viptela.domain_id is defined %}
  domain-id                 {{ viptela.domain_id }}
 {% endif %}{# viptela.domain_id is defined #}
-{%  if viptela.site_id is defined %}
+{% if viptela.site_id is defined %}
  site-id                 {{ viptela.site_id }}
 {% endif %}{# viptela.site_id is defined #}
  no route-consistency-check
-{%  if viptela.org is defined %}
+{% if viptela.org is defined %}
  organization-name       "{{ viptela.org }}"
 {% endif %}{# viptela.org is defined #}
-{%  if viptela.vbond is defined %}
+{% if viptela.vbond is defined %}
  vbond {{ viptela.vbond }} port 12346
 {% endif %}{# viptela.vbond is defined #}
 !
@@ -60,8 +60,10 @@ vpn 0
  dns {{ dns_servers[1] }} secondary
 {% endif %}{# dns_servers[1] is defined #}
  interface ge0/0
-{% if interfaces['ge0/0'].ip.address.primary.address is defined and interfaces['ge0/0'].ip.address.primary.mask is defined %}
-  ip address {{ interfaces['ge0/0'].ip.address.primary.address }}/{{ (interfaces['ge0/0'].ip.address.primary.address + '/' + interfaces['ge0/0'].ip.address.primary.mask) | ipaddr('prefix') }}
+{% if interfaces['ge0/0'].ip.primary.address is defined and interfaces['ge0/0'].ip.primary.mask is defined %}
+  ip address {{ interfaces['ge0/0'].ip.primary.address }}/{{ (interfaces['ge0/0'].ip.primary.address + '/' + interfaces['ge0/0'].ip.primary.mask) | ipaddr('prefix') }}
+{% else %}
+  ip dhcp-client
 {% endif %}{# interfaces['ge0/0'].ip.address.primary.address is defined and interfaces['ge0/0'].ip.address.primary.mask is defined #}
   tunnel-interface
    encapsulation ipsec
@@ -83,14 +85,11 @@ vpn 1
  interface ge0/1
  no shutdown
 !
-!
 vpn 512
  name "Management VPN"
  interface eth0
   ip address ${NICID_0_IP_ADDRESS}/24
   no shutdown
- !
-  ip route 0.0.0.0/0 ${NICID_0_GATEWAY}
  !
 !
 --===============6560338015520979320==

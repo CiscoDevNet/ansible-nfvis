@@ -43,7 +43,7 @@
     status_code: [ 200,201 ]
     return_content: yes
     validate_certs: no
-  failed_when: uri_results.status >= 400
+  failed_when: uri_results.status not in [201, 409]
   changed_when: uri_results.status == 201
   no_log: false  # Don't show output as your password will be on the URI string
   register: uri_results

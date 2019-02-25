@@ -1,3 +1,4 @@
+#jinja2: lstrip_blocks: True, trim_blocks: True
 !
 username {{ ansible_user }} password {{ ansible_password }}
 hostname {{ inventory_hostname.split('.')[0] }}
@@ -9,16 +10,41 @@ security-level 100
 ip address ${NICID_0_IP_ADDRESS} ${NICID_0_NETMASK} 
 no shutdown
 !
-interface GigabitEthernet0/0
-nameif outside
-security-level 0
-{% if interfaces['GigabitEthernet0/0'].ip.address.primary.address is defined and interfaces['GigabitEthernet0/0'].ip.address.primary.mask is defined %}
-ip address {{ interfaces['GigabitEthernet0/0'].ip.address.primary.address }} {{ interfaces['GigabitEthernet0/0'].ip.address.primary.mask }}
-{% else %}
-ip address dhcp
-{% endif %}{# interfaces['GigabitEthernet0/0'].ip.address.primary.address is defined and interfaces['GigabitEthernet0/0'].ip.address.primary.mask is defined #}
-no shutdown
-!
+{#interface GigabitEthernet0/0#}
+{#nameif outside#}
+{#security-level 0#}
+{#{% if interfaces['GigabitEthernet0/0'].ip.address.primary.address is defined and interfaces['GigabitEthernet0/0'].ip.address.primary.mask is defined %}#}
+{#ip address {{ interfaces['GigabitEthernet0/0'].ip.address.primary.address }} {{ interfaces['GigabitEthernet0/0'].ip.address.primary.mask }}#}
+{#{% else %}#}
+{#ip address dhcp#}
+{#{% endif %}{# interfaces['GigabitEthernet0/0'].ip.address.primary.address is defined and interfaces['GigabitEthernet0/0'].ip.address.primary.mask is defined #}
+{#no shutdown#}
+{#!#}
+{% for key, value in interfaces.items() %}
+interface {{ key }}
+ {% if value.vlan is defined %}
+ vlan {{ value.vlan }}
+ {% endif %}{# value.vlan is defined #}
+ {% if value.nameif is defined %}
+ nameif {{ value.nameif }}
+ {% endif %}{# value.vlan is defined #}
+ {% if value.security_level is defined %}
+ security-level {{ value.security_level }}
+ {% endif %}{# value.security_level is defined #}
+ {% if value.description is defined %}
+ description {{ interface_item.description }}
+ {% endif %}
+ {% if value.ip.primary.address is defined %}
+ ip address {{ value.ip.primary.address }} {{ value.ip.primary.mask }}
+ {% endif %}
+ {% if value.enabled is sameas true %}
+ no shut
+{% if value.vlan is defined %}
+interface {{ key | regex_replace('^([a-zA-Z0-9\/]+)\.[^a-zA-Z]+', '\\1') }}
+ no shut
+{%  endif %}{# enabled #}
+{%  endif %}{# value.vlan is defined #}
+{%  endfor %}{# interfaces #}
 http server enable
 http 0.0.0.0 0.0.0.0 management
 aaa authentication http console LOCAL
@@ -30,4 +56,10 @@ ssh 0.0.0.0 0.0.0.0 management
 ssh 0.0.0.0 0.0.0.0 outside
 aaa authentication ssh console LOCAL
 !
-route outside 0.0.0.0 0.0.0.0 {{ static_routes.global[0].fwd_list[0].fwd }} 1
+{% for vrf, value in static_routes.items()|default({}) %}
+{% for route in value|default([]) %}
+{% for dest in route.fwd_list|default([]) %}
+route {{ vrf }} {{ route.prefix }} {{ route.mask }} {{ dest.fwd }} {{ dest.metric|default('') }}
+{% endfor %}
+{% endfor %}
+{% endfor %}
