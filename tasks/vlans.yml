@@ -1,32 +1,32 @@
 ---
-- name: Get current list of vlans
-  uri:
-    url: "https://{{ ansible_host }}/api/running/switch/vlan?deep"
-    user: "{{ nfvis_username }}"
-    password: "{{ nfvis_password }}"
-    method: GET
-    headers:
-      Content-Type: "application/vnd.yang.data+xml"
-    status_code: [ 200 ]
-    return_content: yes
-    validate_certs: no
-  no_log: false  # Don't show output as your password will be on the URI string
-  register: uri_results
+#- name: Get current list of vlans
+#  uri:
+#    url: "https://{{ ansible_host }}/api/running/switch/vlan?deep"
+#    user: "{{ nfvis_username }}"
+#    password: "{{ nfvis_password }}"
+#    method: GET
+#    headers:
+#      Content-Type: "application/vnd.yang.data+xml"
+#    status_code: [ 200 ]
+#    return_content: yes
+#    validate_certs: no
+#  no_log: false  # Don't show output as your password will be on the URI string
+#  register: uri_results
 
 #- debug: var=uri_results
 
 - set_fact:
-    existing_vlans: "{{ uri_results.content | regex_findall('<vlan-id>([^<]+)</vlan-id>') | map('int') | list }}"
+#    existing_vlans: "{{ uri_results.content | regex_findall('<vlan-id>([^<]+)</vlan-id>') | map('int') | list }}"
     network_vlans: "{{ nfvis_networks.values() | map(attribute='vlan') | list }}"
-
+#
 - set_fact:
     all_vlans: "{{ network_vlans + nfvis_vlans | unique }}"
-
-- set_fact:
-    add_vlans: "{{ all_vlans | difference(existing_vlans) }}"
-    remove_vlans: "{{ all_vlans | intersect(existing_vlans) }}"
-
-- debug: msg="Adding VLANs {{ add_vlans | join(',') if add_vlans else 'none' }}"
+#
+#- set_fact:
+#    add_vlans: "{{ all_vlans | difference(existing_vlans) }}"
+#    remove_vlans: "{{ all_vlans | intersect(existing_vlans) }}"
+#
+#- debug: msg="Adding VLANs {{ add_vlans | join(',') if add_vlans else 'none' }}"
 #- debug: var=existing_vlans
 #- debug: var=inventory_vlans
 #- debug: var=add_vlans
@@ -53,6 +53,9 @@
     validate_certs: no
   no_log: false  # Don't show output as your password will be on the URI string
   register: uri_results
-  loop: "{{ add_vlans | default([])  }}"
+#  loop: "{{ add_vlans | default([])  }}"
+  failed_when: uri_results.status not in [201, 409]
+  changed_when: uri_results.status == 201
+  loop: "{{ all_vlans }}"
   loop_control:
     loop_var: vlan_id

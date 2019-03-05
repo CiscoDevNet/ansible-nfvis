@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<image_properties>
+    <vnf_type>ROUTER</vnf_type>
+    <name>{{ package_name }}</name>
+    <version>{{ package_version }}</version>
+    <bootup_time>600</bootup_time>
+    <root_file_disk_bus>virtio</root_file_disk_bus>
+    <root_image_disk_format>qcow2</root_image_disk_format>
+    <vcpu_min>1</vcpu_min>
+    <vcpu_max>8</vcpu_max>
+    <memory_mb_min>4096</memory_mb_min>
+    <memory_mb_max>8192</memory_mb_max>
+    <vnic_max>8</vnic_max>
+    <vnic_names>vnics:1:GigabitEthernet2</vnic_names>
+    <vnic_names>vnics:2:GigabitEthernet3</vnic_names>
+    <vnic_names>vnics:3:GigabitEthernet4</vnic_names>
+    <vnic_names>vnics:4:GigabitEthernet5</vnic_names>
+    <vnic_names>vnics:5:GigabitEthernet6</vnic_names>
+    <vnic_names>vnics:6:GigabitEthernet7</vnic_names>
+    <vnic_names>vnics:7:GigabitEthernet8</vnic_names>
+    <root_disk_gb_min>8</root_disk_gb_min>
+    <root_disk_gb_max>8</root_disk_gb_max>
+    <console_type_serial>true</console_type_serial>
+    <sriov_supported>true</sriov_supported>
+    <sriov_driver_list>igb</sriov_driver_list>
+    <sriov_driver_list>igbvf</sriov_driver_list>
+    <sriov_driver_list>i40evf</sriov_driver_list>
+    <pcie_supported>true</pcie_supported>
+    <pcie_driver_list>igb</pcie_driver_list>
+    <pcie_driver_list>igbvf</pcie_driver_list>
+    <pcie_driver_list>i40evf</pcie_driver_list>
+    <monitoring_supported>true</monitoring_supported>
+    <monitoring_methods>ICMPPing</monitoring_methods>
+    <low_latency>true</low_latency>
+    <privileged_vm>true</privileged_vm>
+    <cdrom>true</cdrom>
+    <bootstrap_file_1>ovf-env.xml</bootstrap_file_1>
+    <bootstrap_file_2>iosxe_config.txt</bootstrap_file_2>
+    <profiles>
+        <profile>
+            <name>isrv-mini</name>
+            <description>isrv-mini</description>
+            <vcpus>1</vcpus>
+            <memory_mb>4096</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+        </profile>
+        <profile>
+            <name>isrv-small</name>
+            <description>isrv-small</description>
+            <vcpus>2</vcpus>
+            <memory_mb>4096</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+        </profile>
+        <profile>
+            <name>isrv-medium</name>
+            <description>isrv-medium</description>
+            <vcpus>4</vcpus>
+            <memory_mb>4096</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+        </profile>
+    </profiles>
+    <default_profile>isrv-small</default_profile>
+</image_properties>

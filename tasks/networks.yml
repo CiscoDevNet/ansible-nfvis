@@ -1,25 +1,25 @@
 ---
-- name: Get current list of networks
-  uri:
-    url: "https://{{ ansible_host }}/api/config/networks?deep"
-    user: "{{ nfvis_username }}"
-    password: "{{ nfvis_password }}"
-    method: GET
-    headers:
-      Content-Type: "application/vnd.yang.data+xml"
-    status_code: [ 200 ]
-    return_content: yes
-    validate_certs: no
-  no_log: false  # Don't show output as your password will be on the URI string
-  register: uri_results
-
+#- name: Get current list of networks
+#  uri:
+#    url: "https://{{ ansible_host }}/api/config/networks?deep"
+#    user: "{{ nfvis_username }}"
+#    password: "{{ nfvis_password }}"
+#    method: GET
+#    headers:
+#      Content-Type: "application/vnd.yang.data+xml"
+#    status_code: [ 200 ]
+#    return_content: yes
+#    validate_certs: no
+#  no_log: false  # Don't show output as your password will be on the URI string
+#  register: uri_results
+#
 - set_fact:
-    existing_networks: "{{ uri_results.content | regex_findall('<name>([^<]+)</name>') }}"
+#    existing_networks: "{{ uri_results.content | regex_findall('<name>([^<]+)</name>') }}"
     inventory_networks: "{{ nfvis_networks.keys() | default([]) }}"
-
-- set_fact:
-    add_networks: "{{ inventory_networks | difference(existing_networks) }}"
-    change_networks: "{{ inventory_networks | intersect(existing_networks) }}"
+#
+#- set_fact:
+#    add_networks: "{{ inventory_networks | difference(existing_networks) }}"
+#    change_networks: "{{ inventory_networks | intersect(existing_networks) }}"
 
 #- debug: var=existing_networks
 #- debug: var=inventory_networks
@@ -40,28 +40,35 @@
     validate_certs: no
   no_log: false  # Don't show output as your password will be on the URI string
   register: uri_results
-  loop: "{{ add_networks | default([])  }}"
+#  loop: "{{ add_networks | default([])  }}"
+  loop: "{{ inventory_networks | default([]) }}"
+  failed_when: uri_results.status not in [201, 409]
+  changed_when: uri_results.status == 201
   loop_control:
     loop_var: network
 
-# - debug: var=uri_results
-
-- name: Modify network
-  uri:
-    url: "https://{{ ansible_host }}/api/config/networks/network/{{ network }}"
-    user: "{{ nfvis_username }}"
-    password: "{{ nfvis_password }}"
-    method: PUT
-    headers:
-      Content-Type: "application/vnd.yang.data+xml"
-    body: "{{ lookup('template', 'network.j2') }}"
-    status_code: [ 200,201,204 ]
-    return_content: yes
-    validate_certs: no
-  no_log: false  # Don't show output as your password will be on the URI string
-  register: uri_results
-  loop: "{{ change_networks | default([]) }}"
-  loop_control:
-    loop_var: network
+#- debug:
+#    var: inventory_networks
+#
+#- name: Modify Networks
+#  uri:
+#    url: "https://{{ ansible_host }}/api/config/networks/network/{{ network }}"
+#    user: "{{ nfvis_username }}"
+#    password: "{{ nfvis_password }}"
+#    method: POST
+#    headers:
+#      Content-Type: "application/vnd.yang.data+xml"
+#    body: "{{ lookup('template', 'network.j2') }}"
+#    status_code: [ 200,201,204 ]
+#    return_content: yes
+#    validate_certs: no
+#  no_log: false  # Don't show output as your password will be on the URI string
+#  register: uri_results
+##  loop: "{{ change_networks | default([]) }}"
+#  loop: "{{ inventory_networks | default([]) }}"
+#  failed_when: uri_results.status not in [201, 409]
+#  changed_when: uri_results.status == 201
+#  loop_control:
+#    loop_var: network
 
 # - debug: var=uri_results
