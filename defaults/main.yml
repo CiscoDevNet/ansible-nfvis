@@ -4,4 +4,4 @@ nfvis_networks: {}
 nfvis_deployments: {}
 nfvis_package_dir: "{{ playbook_dir }}/packages"
 nfvis_image_dir: "{{ playbook_dir }}/images"
-nfvis_temp_dir: '/tmp'
+nfvis_temp_dir: '/tmp/nfvis_packages'
