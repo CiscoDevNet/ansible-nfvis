@@ -71,9 +71,8 @@ def main():
 
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
-                         name=dict(type='str', aliases=['bridge']),
-                         port=dict(type='str'),
-                         vlan_id=dict(type='int'),
+                         name=dict(type='str', aliases=['network']),
+                         bridge=dict(type='str', required=True),
                          )
 
     # seed the result dict in the object
@@ -91,24 +90,24 @@ def main():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
-    nfvis = nfvisModule(module, function='bridge')
+    nfvis = nfvisModule(module, function='network')
 
     payload = None
     port = None
     nfvis.result['changed'] = False
 
-    # Get the list of existing bridges
-    url = 'https://{0}/api/config/bridges?deep'.format(nfvis.params['host'])
+    # Get the list of existing networks
+    url = 'https://{0}/api/config/networks?deep'.format(nfvis.params['host'])
     response = nfvis.request(url, method='GET')
     nfvis.result['data'] = response
     
-    # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name
-    bridge_dict = {}
+    # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the network name
+    network_dict = {}
     try:
-        for item in response['network:bridges']['bridge']:
+        for item in response['network:networks']['network']:
             name = item['name']
-            bridge_dict[name] = item
-        nfvis.result['debug'] = bridge_dict
+            network_dict[name] = item
+        nfvis.result['debug'] = network_dict
     except TypeError:
         pass
     except KeyError:
@@ -116,28 +115,27 @@ def main():
 
     if nfvis.params['state'] == 'present':
         # Construct the payload
-        payload = {'bridge':{}}
-        payload['bridge']['name'] = nfvis.params['name']
-        if nfvis.params['port']:
-            payload['bridge']['port'] = {'name': nfvis.params['port']}
+        payload = {'network':{}}
+        payload['network']['name'] = nfvis.params['name']
+        payload['network']['bridge'] = nfvis.params['bridge']
 
-        if nfvis.params['name'] in bridge_dict:
-            # The bridge exists on the device, so check to see if it is the same configuration
-            bridge_entry = bridge_dict[nfvis.params['name']]
-
+        if nfvis.params['name'] in network_dict:
+            # The network exists on the device, so check to see if it is the same configuration
+            network_entry = network_dict[nfvis.params['name']]
+            nfvis.result['debug'] = network_entry
             # Check to see if the ports are different
-            if (nfvis.params['port'] and 'port' not in bridge_entry) or (nfvis.params['port'] and nfvis.params['port'] != bridge_entry['port'][0]['name']) or (not nfvis.params['port'] and 'port' in bridge_entry):
-                url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
+            if nfvis.params['bridge'] != network_entry['bridge']:
+                url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
                 response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
                 nfvis.result['changed'] = True
         else:
-            # The bridge does not exist on the device, so add it
-            url = 'https://{0}/api/config/bridges'.format(nfvis.params['host'])
+            # The network does not exist on the device, so add it
+            url = 'https://{0}/api/config/networks'.format(nfvis.params['host'])
             response = nfvis.request(url, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
-        if nfvis.params['name'] in bridge_dict:
-            url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
+        if nfvis.params['name'] in network_dict:
+            url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
             response = nfvis.request(url, 'DELETE')
             nfvis.result['changed'] = True
 

@@ -73,8 +73,12 @@ class nfvisModule(object):
         #                                   ]
         self.modifiable_methods = ['POST', 'PUT', 'DELETE']
 
-        self.headers = {'Content-Type': 'application/vnd.yang.data+json',
-                        'Accept': 'application/vnd.yang.data+json'}
+        if function == 'vlan':
+            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
+                            'Accept': 'application/vnd.yang.collection+json'}
+        else:
+            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
+                            'Accept': 'application/vnd.yang.data+json'}
 
     def request(self, url, method=None, payload=None):
         """Generic HTTP method for nfvis requests."""
@@ -83,8 +87,8 @@ class nfvisModule(object):
             self.method = method
         # self.url = 'https://{host}/api/v0/{path}'.format(path=self.path.lstrip('/'), **self.params)
         self.url = url
-        self.result['url'] = url
-        self.result['payload'] = payload
+        self.method = method
+        self.payload = payload
 
         resp, info = fetch_url(self.module, self.url,
                                headers=self.headers,
@@ -94,25 +98,29 @@ class nfvisModule(object):
                                )
         self.response = info['msg']
         self.status = info['status']
-        self.result['response'] = self.response
-        self.result['status'] = self.status
-        self.result['url'] = self.url
-        self.result['method'] = method
 
-        if self.status >= 500:
+        if self.status >= 300:
+            try:
+                self.fail_json(msg='Request failed for {url}: {status} - {msg}'.format(**info),
+                                  body=json.loads(to_native(info['body'])))
+            except Exception:
+                pass
+
             self.fail_json(msg='Request failed for {url}: {status} - {msg}'.format(**info))
-        elif self.status >= 300:
-            self.fail_json(msg='Request failed for {url}: {status} - {msg}'.format(**info),
-                           body=json.loads(to_native(info['body'])))
+
         try:
             return json.loads(to_native(resp.read()))
         except Exception:
             pass
-
+        
     def exit_json(self, **kwargs):
         """Custom written method to exit from module."""
         self.result['response'] = self.response
         self.result['status'] = self.status
+        self.result['url'] = self.url
+        self.result['payload'] = self.payload
+        self.result['method'] = self.method
+
         self.result.update(**kwargs)
         self.module.exit_json(**self.result)
 
@@ -120,5 +128,9 @@ class nfvisModule(object):
         """Custom written method to return info on failure."""
         self.result['response'] = self.response
         self.result['status'] = self.status
+        self.result['url'] = self.url
+        self.result['payload'] = self.payload
+        self.result['method'] = self.method
+
         self.result.update(**kwargs)
         self.module.fail_json(msg=msg, **self.result)

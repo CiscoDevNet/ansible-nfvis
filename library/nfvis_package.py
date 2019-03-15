@@ -63,10 +63,22 @@ message:
 # import requests
 import os.path
 # from requests.auth import HTTPBasicAuth
-from paramiko import SSHClient
-from scp import SCPClient
+# from paramiko import SSHClient
+# from scp import SCPClient
 from ansible.module_utils.basic import AnsibleModule, json
 from ansible.module_utils.nfvis import nfvisModule, nfvis_argument_spec
+
+try:
+    import paramiko
+    HAS_PARAMIKO = True
+except ImportError:
+    HAS_PARAMIKO = False
+
+try:
+    from scp import SCPClient
+    HAS_SCP = True
+except ImportError:
+    HAS_SCP = False
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -96,6 +108,18 @@ def run_module():
                            supports_check_mode=True,
                            )
     nfvis = nfvisModule(module, function='package')
+
+    if not HAS_PARAMIKO:
+        module.fail_json(
+            msg='library paramiko is required when file_pull is False but does not appear to be '
+                'installed. It can be installed using `pip install paramiko`'
+        )
+
+    if not HAS_SCP:
+        module.fail_json(
+            msg='library scp is required when file_pull is False but does not appear to be '
+                'installed. It can be installed using `pip install scp`'
+        )
 
     # if the user is working with this module in only check mode we do not
     # want to make any changes to the environment, just return the current
@@ -145,56 +169,65 @@ def run_module():
     # if response.status_code not in [200]:
     #     module.fail_json(msg=(response.status_code, response.content))
 
+
+    # Get the list of existing deployments
+    url = 'https://{0}/api/config/vm_lifecycle/images?deep'.format(nfvis.params['host'])
+    response = nfvis.request(url, method='GET')
+    nfvis.result['data'] = response
+
+    # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
+    images_dict = {}
+    try:
+        for item in response['vmlc:images']['image']:
+            name = item['name']
+            images_dict[name] = item
+    except TypeError:
+        pass
+    except KeyError:
+        pass
+
     if nfvis.params['state'] == 'present':
-        # try:
-        #     ssh = SSHClient()
-        #     ssh.load_system_host_keys()
-        #     ssh.connect(hostname=module.params['host'], port=22222, username=module.params['user'],
-        #                 password=module.params['password'], look_for_keys=False)
-        # except paramiko.AuthenticationException:
-        #     module.fail_json(msg = 'Authentication failed, please verify your credentials')
-        # except paramiko.SSHException as sshException:
-        #     module.fail_json(msg = 'Unable to establish SSH connection: %s' % sshException)
-        # except paramiko.BadHostKeyException as badHostKeyException:
-        #     module.fail_json(msg='Unable to verify servers host key: %s' % badHostKeyException)
-        # except Exception as e:
-        #     module.fail_json(msg=e.args)
-        #
-        # try:
-        #     with SCPClient(ssh.get_transport()) as scp:
-        #         scp.put(module.params['file'], '/data/intdatastore/uploads')
-        # except scp.SCPException as e:
-        #     module.fail_json(msg="Operation error: %s" % e)
-        #
-        # scp.close()
-
-        payload = {
-            'image': [
-                {
-                    "name": nfvis.params['name'],
-                    "src": 'file://{0}/{1}.tar.gz'.format(nfvis.params['dest'], nfvis.params['name'])
-                }
-            ]
-        }
-
-        url = 'https://{0}/api/config/vm_lifecycle/images'.format(nfvis.params['host'])
-        response = nfvis.request(url, method='POST', payload=json.dumps(payload))
-
-        if nfvis.status == 201:
-            nfvis.result['changed'] = True
-        elif nfvis.status == 409:
+        if nfvis.params['name'] in images_dict:
             nfvis.result['changed'] = False
+        else:
+            try:
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.load_system_host_keys()
+                ssh.connect(hostname=module.params['host'], port=22222, username=module.params['user'],
+                            password=module.params['password'], look_for_keys=False)
+            except paramiko.AuthenticationException:
+                module.fail_json(msg = 'Authentication failed, please verify your credentials')
+            except paramiko.SSHException as sshException:
+                module.fail_json(msg = 'Unable to establish SSH connection: %s' % sshException)
+            except paramiko.BadHostKeyException as badHostKeyException:
+                module.fail_json(msg='Unable to verify servers host key: %s' % badHostKeyException)
+            except Exception as e:
+                module.fail_json(msg=e.args)
+
+            try:
+                with SCPClient(ssh.get_transport()) as scp:
+                    scp.put(module.params['file'], '/data/intdatastore/uploads')
+            except scp.SCPException as e:
+                module.fail_json(msg="Operation error: %s" % e)
+
+            scp.close()
+
+            payload = {'image': {}}
+            payload['image']['name'] = nfvis.params['name']
+            payload['image']['src'] = 'file://{0}/{1}.tar.gz'.format(nfvis.params['dest'], nfvis.params['name'])
+
+            url = 'https://{0}/api/config/vm_lifecycle/images'.format(nfvis.params['host'])
+            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
 
     else:
-        # Delete the image
-        url = 'https://{0}/api/config/vm_lifecycle/images/image/{1}.tar.gz'.format(nfvis.params['host'], nfvis.params['name'])
-        response = nfvis.request(url, 'DELETE')
-
-        if nfvis.status == 204:
+        if nfvis.params['name'] in images_dict:
+            # Delete the image
+            url = 'https://{0}/api/config/vm_lifecycle/images/image/{1}'.format(nfvis.params['host'], nfvis.params['name'])
+            response = nfvis.request(url, 'DELETE')
             nfvis.result['changed'] = True
-        elif nfvis.status == 404:
+        else:
             nfvis.result['changed'] = False
-
         # Delete the file
         # payload = {
         #     'image': { 'name': '{0}.tar.gz'.format(nfvis.params['name']) }
@@ -212,7 +245,7 @@ def run_module():
     # state with no modifications
     # FIXME: Work with nfvis so they can implement a check mode
     if module.check_mode:
-        nfvis.exit_json(**nfvis.result)
+        module.exit_json(**nfvis.result)
 
     # execute checks for argument completeness
 
@@ -221,7 +254,7 @@ def run_module():
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
-    nfvis.exit_json(**nfvis.result)
+    module.exit_json(**nfvis.result)
 
 def main():
     run_module()

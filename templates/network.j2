@@ -1,8 +1,0 @@
-<network>
-    <name>{{ network }}</name>
-{% if nfvis_networks[network].trunk == 'false' %}
-    <vlan>{{ nfvis_networks[network].vlan }}</vlan>
-{% endif %}{# nfvis_networks[network].trunk == 'false' #}
-    <trunk>{{ nfvis_networks[network].trunk }}</trunk>
-    <bridge>{{ nfvis_networks[network].bridge }}</bridge>
-</network>

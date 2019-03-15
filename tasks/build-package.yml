@@ -1,0 +1,40 @@
+---
+- name: Creating {{ nfvis_temp_dir }}/{{ package_name }}
+  file:
+    state: directory
+    dest: "{{ nfvis_temp_dir }}/{{ package_name }}"
+
+- name: Create {{ nfvis_temp_dir }}/{{ package_name }}/image_properties.xml
+  copy:
+    content: "{{ lookup('template', package_template) }}"
+    dest: "{{ nfvis_temp_dir }}/{{ package_name }}/image_properties.xml"
+
+- name: Copy {{ package_image }} to {{ nfvis_temp_dir }}/{{ package_name }}
+  copy:
+    src: "{{ nfvis_image_dir }}/{{ package_image }}"
+    dest: "{{ nfvis_temp_dir }}/{{ package_name }}"
+
+- name: Get checksums
+  stat:
+    checksum_algorithm: sha1
+    path: "{{ nfvis_temp_dir }}/{{ package_name }}/{{ file }}"
+  register: checksum
+  loop_control:
+    loop_var: file
+  loop:
+    - image_properties.xml
+    - "{{ package_image }}"
+
+- set_fact:
+    image_properties_checksum: "{{ checksum.results[0].stat.checksum }}"
+    image_checksum: "{{ checksum.results[1].stat.checksum }}"
+
+- name: Create {{ nfvis_temp_dir }}/{{ package_name }}/package.mf
+  copy:
+    content: "{{ lookup('template', 'package.mf.j2') }}"
+    dest: "{{ nfvis_temp_dir }}/{{ package_name }}/package.mf"
+
+- name: Create package {{ nfvis_package_dir }}/{{ package_name }}.tar.gz
+  archive:
+    path: "{{ nfvis_temp_dir }}/{{ package_name }}/*"
+    dest: "{{ nfvis_package_dir }}/{{ package_name }}.tar.gz"
