@@ -187,9 +187,7 @@ def run_module():
         pass
 
     if nfvis.params['state'] == 'present':
-        if nfvis.params['name'] in images_dict:
-            nfvis.result['changed'] = False
-        else:
+        if nfvis.params['name'] not in images_dict:
             try:
                 ssh = paramiko.SSHClient()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -219,7 +217,7 @@ def run_module():
 
             url = 'https://{0}/api/config/vm_lifecycle/images'.format(nfvis.params['host'])
             response = nfvis.request(url, method='POST', payload=json.dumps(payload))
-
+            nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in images_dict:
             # Delete the image
