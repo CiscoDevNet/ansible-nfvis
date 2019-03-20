@@ -73,7 +73,14 @@ def main():
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
                          name=dict(type='str', aliases=['network']),
                          bridge=dict(type='str', required=True),
+                         trunk=dict(type='bool', default=True),
+                         sriov=dict(type='bool', default=False),
+                         native_tagged=dict(type='bool'),
+                         native_vlan=dict(type='str'),
+                         vlan=dict(type='str'),
                          )
+
+
 
     # seed the result dict in the object
     # we primarily care about changed and state
@@ -107,32 +114,73 @@ def main():
         for item in response['network:networks']['network']:
             name = item['name']
             network_dict[name] = item
-        nfvis.result['debug'] = network_dict
+        # nfvis.result['debug'] = network_dict
     except TypeError:
         pass
     except KeyError:
         pass
 
     if nfvis.params['state'] == 'present':
-        # Construct the payload
-        payload = {'network':{}}
-        payload['network']['name'] = nfvis.params['name']
-        payload['network']['bridge'] = nfvis.params['bridge']
 
-        if nfvis.params['name'] in network_dict:
-            # The network exists on the device, so check to see if it is the same configuration
-            network_entry = network_dict[nfvis.params['name']]
-            nfvis.result['debug'] = network_entry
-            # Check to see if the ports are different
-            if nfvis.params['bridge'] != network_entry['bridge']:
-                url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
-                nfvis.result['changed'] = True
-        else:
+        if nfvis.params['name'] not in network_dict:
+
+            # Construct the payload
+            payload = {'network': {}}
+            payload['network']['name'] = nfvis.params['name']
+            payload['network']['bridge'] = nfvis.params['bridge']
+            if nfvis.params['trunk'] == False:
+                payload['network']['bridge'] = nfvis.params['trunk']
+                if nfvis.params['vlan']:
+                    payload['network']['vlan'] = nfvis.params['vlan']
+
+            if nfvis.params['sriov']:
+                payload['network']['sriov'] = nfvis.params['sriov']
+            if nfvis.params['native_vlan']:
+                payload['network']['native-vlan'] = nfvis.params['native_vlan']
+
             # The network does not exist on the device, so add it
             url = 'https://{0}/api/config/networks'.format(nfvis.params['host'])
             response = nfvis.request(url, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
+
+        else:
+            # The bridge exists on the device, so let's start with the original payload and see if anything changed
+            payload = {'network': network_dict[nfvis.params['name']]}
+
+            if payload['network']['bridge'] != nfvis.params['bridge']:
+                payload['network']['bridge'] = nfvis.params['bridge']
+                nfvis.result['changed'] = True
+
+            if nfvis.params['trunk'] == False:
+                if 'trunk' not in payload['network'] or payload['network']['trunk'] == True:
+                    payload['network']['trunk'] = False
+                    nfvis.result['changed'] = True
+                if nfvis.params['vlan']:
+                    if 'vlan' not in payload['network'] or nfvis.params['vlan'] not in payload['network']['vlan']:
+                        payload['network']['vlan'] = nfvis.params['vlan']
+                        nfvis.result['changed'] = True
+
+            if nfvis.params['sriov']:
+                if 'sriov' not in payload['network'] or nfvis.params['sriov'] != payload['network']['sriov']:
+                    payload['network']['sriov'] = nfvis.params['sriov']
+                    nfvis.result['changed'] = True
+
+            if nfvis.params['native_tagged']:
+                if 'native_tagged' not in payload['network'] or nfvis.params['native_tagged'] != payload['network']['native_tagged']:
+                    payload['network']['native_tagged'] = nfvis.params['native_tagged']
+                    nfvis.result['changed'] = True
+
+            if nfvis.params['native_vlan']:
+                if 'native_vlan' not in payload['network'] or nfvis.params['native_vlan'] != payload['network']['native_vlan']:
+                    payload['network']['native_vlan'] = nfvis.params['native_vlan']
+                    nfvis.result['changed'] = True
+
+
+
+            if nfvis.result['changed'] == True:
+                url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
+                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+
     else:
         if nfvis.params['name'] in network_dict:
             url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])

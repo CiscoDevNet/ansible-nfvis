@@ -5,12 +5,42 @@ An Ansible Role for automating Cisco NFVIS
 This is a hybrid role that contains the following modules:
 
 - nfvis_system
+- nfvis_bridge
 - nfvis_network
 - nfvis_vlan
 - nfvis_depoloyment
 - nfvis_package
 
-In addition the role can be called to help create packages:
+To use this role, clone it into your `roles` directory:
+
+```
+git clone https://github.com/ciscops/ansible-nfvis.git
+```
+
+To load the modules for use in your playbook:
+
+```yaml
+- hosts: nfvis
+  connection: local
+  gather_facts: no
+  roles:
+    - ansible-nfvis
+  tasks:
+    - name: Build Bridges
+      nfvis_bridge:
+        host: 1.2.3.4
+        user: admin
+        password: cisco
+        name: service
+        state: present
+```
+
+## Tasks
+In addition to the modules, the role can be called to help create packages:
+
+### Build Packages
+
+The `build-package` task can be called to build the packages that can be uploaded to the NFVIS host with the `nfvis_package` module.
 
 ```yaml
 - name: Build packages
@@ -27,18 +57,25 @@ In addition the role can be called to help create packages:
 * `package_name`: The name of the package as referecned in deployments
 * `package_version`: The version of the package
 * `package_image`: The image with which to build the package
-* `package_template`: The template from which the image_properties is derived
+* `package_template`: The template from which the image_properties is derived.  This uses the default Ansible search
+behavior for templates.  Sock templates are located in `ansible-nfvis/tempaltes`.
+
+The `build-package` tasks looks for the image files used to build the packages in the directory specified by `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
+It builds the packages in the directory specified by `nfvis_temp_dir` (Default: /tmp/nfvis_packages) and stores the packages
+in the directory specified in `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
+
+
 
 >Note: Since nfvis_deployment inject the config into the deployments, this task does not include any configuration.
 
-## Module Examples
+## Modules
 
 All modules requite authentication information for the NFVIS host:
 * `host`: The address of the NFVIS device in which the API can be reached
 * `user`: The username with which to authenticate to the NFVIS API
 * `password`: The username with which to authenticate to the NFVIS API
 
-#### Configure System:
+### Configure System:
 ```yaml
 - name: Configure system
   nfvis_system:
@@ -54,7 +91,7 @@ All modules requite authentication information for the NFVIS host:
 * `hostname`: The hostname of the NFVIS host
 * `trusted_source`: A list of trusted sources in CIDR notation
 
-#### Configure VLANs:
+### Configure VLANs:
 
 The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
 ```yaml
@@ -69,7 +106,24 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
 * `vlan_id`: The VLAN ID to add to the switch
 * `state`: The state of the VLAN.  Can be `present` to add the VLAN or `absent` to delete the VLAN. (default: `present`)
 
-#### Configure Networks:
+### Configure Bridges:
+```yaml
+- nfvis_bridge:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: service-br
+    state: present
+```
+
+* `name`: Name of the bridge (required)
+* `state`: The state if the bridge ('present' or 'absent')
+* `ports`: List of ports to which the bridge is attached
+* `ip`: IP address and netmask of the bridge
+* `vlan`: VLAN tag
+* `dhcp`: Flag to specify DHCP configuration
+
+### Configure Networks:
 ```yaml
 - nfvis_network:
     host: 1.2.3.4
@@ -85,7 +139,7 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
 * `name`: Name of the network
 * `bridge`: The bride to which the network is associated
 
-#### Deploy VNF:
+### Deploy VNF:
 ```yaml
 - nfvis_deployment:
     host: 1.2.3.4
@@ -124,7 +178,7 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
     * `type`: The type of proxy (default `ssh`)
 * `state`: The state of the VLAN.  Can be `present` to add the VLAN or `absent` to delete the VLAN. (default: `present`)
 
-#### Upload Packages
+### Upload Packages
 ```yaml
 - name: Package
   nfvis_package:

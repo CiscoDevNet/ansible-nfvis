@@ -46,31 +46,6 @@ class nfvisModule(object):
         self.params['url_username'] = url_username = self.params['user']
         self.params['url_password'] = self.params['password']
 
-        # If URLs need to be modified or added for specific purposes, use .update() on the url_catalog dictionary
-        self.get_urls = {'bridges': '/api/config/bridges?deep',
-                         'networks': '/api/config/networks?deep'
-                         }
-
-        # Used to retrieve only one item
-        self.get_one_urls = {'organizations': '/organizations/{org_id}',
-                             'network': '/networks/{net_id}',
-                             }
-
-        # Module should add URLs which are required by the module
-        self.url_catalog = {'get_all': self.get_urls,
-                            'get_one': self.get_one_urls,
-                            'create': None,
-                            'update': None,
-                            'delete': None,
-                            'misc': None,
-                            }
-
-        # TODO: This should be removed as org_name isn't always required
-        self.module.required_if = [('state', 'present', ['org_name']),
-                                   ('state', 'absent', ['org_name']),
-                                   ]
-        # self.module.mutually_exclusive = [('org_id', 'org_name'),
-        #                                   ]
         self.modifiable_methods = ['POST', 'PUT', 'DELETE']
 
         if function == 'vlan':

@@ -8,48 +8,57 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_bridge
 
-short_description: This is my sample module
+short_description: Configure bridges in an NFVIS host
 
-version_added: "2.4"
+version_added: "n/a"
 
 description:
-    - "This is my longer description explaining my sample module"
+    - "Configure bridges in an NFVIS host"
 
 options:
     name:
         description:
-            - This is the message to send to the sample module
+            - Name of the bridge
         required: true
-    new:
+    state:
         description:
-            - Control to demo if the result of this module is changed or not
+            - The state if the bridge ('present' or 'absent')
         required: false
-
-extends_documentation_fragment:
-    - azure
+    ports:
+        description:
+            - List of ports to which the bridge is attached
+    ip:
+        description:
+            - IP address and netmask of the bridge
+    vlan:
+        description:
+            - VLAN tag
+    dhcp:
+        description:
+            - Flag to specify DHCP configuration
 
 author:
-    - Your Name (@yourhandle)
+    - Steven Carter (@yourhandle)
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
-  my_new_test_module:
-    name: hello world
+# Create a service chain bridge
+- nfvis_bridge:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: service-br
+    state: present
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_new_test_module:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_new_test_module:
-    name: fail me
+# Create a service chain bridge
+- nfvis_bridge:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: service-br
+    state: absent
 '''
 
 RETURN = '''
@@ -72,8 +81,11 @@ def main():
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
                          name=dict(type='str', aliases=['bridge']),
-                         port=dict(type='str'),
-                         vlan_id=dict(type='int'),
+                         ports=dict(type='list'),
+                         ip=dict(type='list'),
+                         vlan=dict(type='int'),
+                         purge=dict(type='bool', default=False),
+                         dhcp=dict(type='bool')
                          )
 
     # seed the result dict in the object
@@ -115,26 +127,105 @@ def main():
         pass
 
     if nfvis.params['state'] == 'present':
-        # Construct the payload
-        payload = {'bridge':{}}
-        payload['bridge']['name'] = nfvis.params['name']
-        if nfvis.params['port']:
-            payload['bridge']['port'] = {'name': nfvis.params['port']}
 
-        if nfvis.params['name'] in bridge_dict:
-            # The bridge exists on the device, so check to see if it is the same configuration
-            bridge_entry = bridge_dict[nfvis.params['name']]
+        if nfvis.params['name'] not in bridge_dict or nfvis.params['purge'] == True:
+            # If the
+            # Construct the payload
+            payload = {'bridge': {}}
+            payload['bridge']['name'] = nfvis.params['name']
 
-            # Check to see if the ports are different
-            if (nfvis.params['port'] and 'port' not in bridge_entry) or (nfvis.params['port'] and nfvis.params['port'] != bridge_entry['port'][0]['name']) or (not nfvis.params['port'] and 'port' in bridge_entry):
+            if nfvis.params['dhcp'] == True:
+                payload['bridge']['dhcp'] = [ None ]
+
+            payload['bridge']['port'] = []
+            if nfvis.params['ports']:
+                for port in nfvis.params['ports']:
+                    payload['bridge']['port'].append( {'name': port} )
+
+            payload['bridge']['vlan'] = None
+            if nfvis.params['vlan']:
+                payload['bridge']['vlan'] = nfvis.params['vlan']
+
+            if nfvis.params['ip']:
+                payload['bridge']['ip'] = {}
+                if 'address' in nfvis.params['ip']:
+                    payload['bridge']['ip']['address'] = nfvis.params['ip']['address']
+                else:
+                    module.fail_json(msg="address must be specified for ip")
+                if 'netmask' in nfvis.params['ip']:
+                    payload['bridge']['ip']['netmask'] = nfvis.params['ip']['netmask']
+                else:
+                    module.fail_json(msg="netmask must be specified for ip")
+
+
+            if nfvis.params['name'] in bridge_dict:
+                # We are overwritting (purging) what is on the NFVIS host
                 url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
                 response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
-                nfvis.result['changed'] = True
-        else:
-            # The bridge does not exist on the device, so add it
-            url = 'https://{0}/api/config/bridges'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+            else:
+                url = 'https://{0}/api/config/bridges'.format(nfvis.params['host'])
+                response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+
             nfvis.result['changed'] = True
+        else:
+            # The bridge exists on the device, so let's start with the original payload and see if anything changed
+            payload = {'bridge': bridge_dict[nfvis.params['name']]}
+
+            if nfvis.params['ports']:
+                # Check ports
+                if 'port' not in payload['bridge']:
+                    payload['bridge']['port'] = []
+                    # No ports are on the NFVIS host, so add them all
+                    for port in nfvis.params['ports']:
+                        payload['bridge']['port'].append({'name': port})
+                    nfvis.result['changed'] = True
+                else:
+                    # Add the ports that are not already on the NFVIS host
+                    existing_ports = []
+                    for item in payload['bridge']['port']:
+                        existing_ports.append(item['name'])
+                    for port in nfvis.params['ports']:
+                        if port not in existing_ports:
+                            payload['bridge']['port'].append({'name': port})
+                            nfvis.result['changed'] = True
+
+            if nfvis.params['vlan']:
+                if 'vlan' not in payload['bridge'] or nfvis.params['vlan'] != payload['bridge']['vlan']:
+                    payload['bridge']['vlan'] = nfvis.params['vlan']
+                    nfvis.result['changed'] = True
+
+            if nfvis.params['dhcp']:
+                if nfvis.params['dhcp'] == True and 'dhcp' not in payload['bridge']:
+                    payload['bridge']['dhcp'] = [ nfvis.params['dhcp'] ]
+                    nfvis.result['changed'] = True
+                elif nfvis.params['dhcp'] == False and 'dhcp' in payload['bridge']:
+                    payload['bridge']['dhcp'] = None
+                    nfvis.result['changed'] = True
+
+            if nfvis.params['ip']:
+                if 'ip' not in payload['bridge']:
+                    # No ip on the NFVIS host, so add the entire dict
+                    payload['bridge']['ip'] = nfvis.params['ip']
+                    nfvis.result['changed'] = True
+                else:
+                    if 'address' in nfvis.params['ip']:
+                        if payload['bridge']['ip']['address'] != nfvis.params['ip']['address']:
+                            payload['bridge']['ip']['address'] = nfvis.params['ip']['address']
+                            nfvis.result['changed'] = True
+                    else:
+                        module.fail_json(msg="address must be specified for ip")
+
+                    if 'netmask' in nfvis.params['ip']:
+                        if payload['bridge']['ip']['netmask'] != nfvis.params['ip']['netmask']:
+                            payload['bridge']['ip']['netmask'] = nfvis.params['ip']['netmask']
+                            nfvis.result['changed'] = True
+                    else:
+                        module.fail_json(msg="netmask must be specified for ip")
+
+            if nfvis.result['changed'] == True:
+                url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
+                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+
     else:
         if nfvis.params['name'] in bridge_dict:
             url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
