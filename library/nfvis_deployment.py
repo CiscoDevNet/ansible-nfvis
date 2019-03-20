@@ -8,48 +8,81 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_deployment
 
-short_description: This is my sample module
+short_description: Deploys a VNF onto an NFVIS host
 
-version_added: "2.4"
+version_added: "n/a"
 
 description:
-    - "This is my longer description explaining my sample module"
+    - "TDeploys a VNF onto an NFVIS host"
 
 options:
     name:
         description:
-            - This is the message to send to the sample module
+            - Name of the deployment
         required: true
-    new:
+    state:
         description:
-            - Control to demo if the result of this module is changed or not
+            - The state if the bridge ('present' or 'absent') (Default: 'present')
+        required: false
+    image:
+        description:
+            - The name of the image to use for the deployment
+        required: true
+    flavor:
+        description:
+            - The name of the flavor to use for the deployment
+        required: true
+    interfaces:
+        description:
+            - A list of dictionaries specifying the interfaces to create for the VNF
+        required: false
+    bootup_time:
+        description:
+            - The time to allow the VNF to boot before starting monitoring
+        required: false
+    port_forwarding:
+        description:
+            - A list of dictionaries specifying which ports to proxy to the VNF (_Note: monitoring must be enabled_)
+        required: false
+    config_data:
+        description:
+            - A list of dictionaries defining the configuration data to feed to the deployment via cloud-init
         required: false
 
-extends_documentation_fragment:
-    - azure
-
 author:
-    - Your Name (@yourhandle)
+    - Steven Carter
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
-  my_new_test_module:
-    name: hello world
+# Create a new deployment
+- nfvis_deployment:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: isrv1
+    state: present
+    image: isrv
+    flavor: isrv-small
+    interfaces:
+      - network: int-mgmt-net
+      - network: wan-net
+      - network: lan-net
+    bootup_time: 600
+    port_forwarding:
+      - proxy_port: 20001
+        source_bridge: 'wan-br'
+    config_data:
+      - dst: iosxe_config.txt
+        data: "{{ lookup('template', 'iosxe_config.txt.j2') }}"
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_new_test_module:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_new_test_module:
-    name: fail me
+# Delete a deployment
+- nfvis_deployment:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: isrv1
 '''
 
 RETURN = '''

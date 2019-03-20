@@ -64,7 +64,7 @@ The `build-package` tasks looks for the image files used to build the packages i
 It builds the packages in the directory specified by `nfvis_temp_dir` (Default: /tmp/nfvis_packages) and stores the packages
 in the directory specified in `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
 
-
+The default values for `nfvis_package_dir`, `nfvis_temp_dir`, and `nfvis_package_dir` are found in `ansible-nfvis/defaults/main.yml`.
 
 >Note: Since nfvis_deployment inject the config into the deployments, this task does not include any configuration.
 
@@ -75,7 +75,7 @@ All modules requite authentication information for the NFVIS host:
 * `user`: The username with which to authenticate to the NFVIS API
 * `password`: The username with which to authenticate to the NFVIS API
 
-### Configure System:
+### Configure System Settigns:
 ```yaml
 - name: Configure system
   nfvis_system:
@@ -85,7 +85,6 @@ All modules requite authentication information for the NFVIS host:
     hostname: "{{ inventory_hostname }}"
     trusted_source:
       - 0.0.0.0/0
-    state: present
 ```
 
 * `hostname`: The hostname of the NFVIS host
@@ -103,8 +102,10 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
     vlan_id: 100
 ```
 
-* `vlan_id`: The VLAN ID to add to the switch
+* `vlan_id`: The VLAN ID to add to the NFVIS host
 * `state`: The state of the VLAN.  Can be `present` to add the VLAN or `absent` to delete the VLAN. (default: `present`)
+
+>Note: This requires that the NFVIS device contain an embedded switch (e.g. ENCS)
 
 ### Configure Bridges:
 ```yaml
@@ -136,8 +137,15 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
     state: present
 ```
 
-* `name`: Name of the network
-* `bridge`: The bride to which the network is associated
+* `name`: Name of the network (required)
+* `state`: The state if the network ('present' or 'absent')
+* `bridge`: The bridge to which the network is associated
+* `trunk`: Set network to trunk mode
+* `sriov`: SR-IOV supported on the network
+* `native_tagged`: Specifies if the netowrk is tagged or not
+* `native_vlan`: Specifies a native VLAN. It sets the native characteristics when the interface is in trunk mode. If you do not configure a native VLAN, the default VLAN 1 is used as the native VLAN
+
+* `vlan`: Specifies the VLAN ID when the network is in access mode (i.e NOT a trunk)
 
 ### Deploy VNF:
 ```yaml
@@ -163,8 +171,9 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
 ```
 
 * `name`: Name of the deployment (required)
+* `state`: The state of the VLAN.  Can be `present` to add the VLAN or `absent` to delete the deployment. (default: `present`)
 * `image`: The name of the image to use for the deployment (required)
-* `flavor`: The name of the image to use for the deployment (required)
+* `flavor`: The name of the flavor to use for the deployment (required)
 * `interfaces`: A list of dictionaries specifying the interfaces to create for the VNF
     * `network`: The name of the network to attach the interface (required)
     * `nicid`: The nic id of the interface.  (Default: the index of that element in the list)
@@ -176,7 +185,9 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
     * `source_bridge`: The bridge on the NFVIS device to attach the proxy (Default: MGMT)
     * `protocol`: The protocol of the port to be proxied (default `tcp`)
     * `type`: The type of proxy (default `ssh`)
-* `state`: The state of the VLAN.  Can be `present` to add the VLAN or `absent` to delete the VLAN. (default: `present`)
+* `config_data`: A list of dictionaries defining the configuration data to feed to the deployment via cloud-init:
+    * `dst`: The name of the file to place in the config drive
+    * `data`
 
 ### Upload Packages
 ```yaml

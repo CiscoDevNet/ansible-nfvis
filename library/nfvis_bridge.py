@@ -24,7 +24,7 @@ options:
         required: true
     state:
         description:
-            - The state if the bridge ('present' or 'absent')
+            - The state if the bridge ('present' or 'absent') (Default: 'present')
         required: false
     ports:
         description:
@@ -40,7 +40,7 @@ options:
             - Flag to specify DHCP configuration
 
 author:
-    - Steven Carter (@yourhandle)
+    - Steven Carter
 '''
 
 EXAMPLES = '''

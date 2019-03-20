@@ -8,7 +8,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_package
 
 short_description: This is my sample module
 
@@ -20,36 +20,40 @@ description:
 options:
     name:
         description:
-            - This is the message to send to the sample module
+            - The name of the package
         required: true
-    new:
+    state:
         description:
-            - Control to demo if the result of this module is changed or not
+            - The state if the bridge ('present' or 'absent') (Default: 'present')
+        required: false
+    file:
+        description:
+            - The file name of the package
         required: false
 
-extends_documentation_fragment:
-    - azure
-
 author:
-    - Your Name (@yourhandle)
+    - Steven Carter
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
-  my_new_test_module:
-    name: hello world
+# Upload and register a package
+- name: Package
+  nfvis_package:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    file: asav.tar.gz
+    name: asav
+    state: present
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_new_test_module:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_new_test_module:
-    name: fail me
+# Deregister a package
+- name: Package
+  nfvis_package:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: asav
+    state: absent
 '''
 
 RETURN = '''

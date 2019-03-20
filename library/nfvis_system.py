@@ -8,30 +8,27 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_system
 
-short_description: This is my sample module
+short_description: This module sets system settings on an NFVIS host
 
-version_added: "2.4"
+version_added: "n/a"
 
 description:
-    - "This is my longer description explaining my sample module"
+    - "This module sets system settings on an NFVIS host"
 
 options:
-    name:
+    hostname:
         description:
-            - This is the message to send to the sample module
-        required: true
-    new:
+            - The hostname of the NFVIS host
+        required: false
+    trusted_source:
         description:
-            - Control to demo if the result of this module is changed or not
+            - A list of trusted sources in CIDR notation
         required: false
 
-extends_documentation_fragment:
-    - azure
-
 author:
-    - Your Name (@yourhandle)
+    - Steven Carter
 '''
 
 EXAMPLES = '''

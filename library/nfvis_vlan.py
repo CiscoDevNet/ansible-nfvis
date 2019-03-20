@@ -8,48 +8,45 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_vlan
 
 short_description: This is my sample module
 
 version_added: "2.4"
 
 description:
-    - "This is my longer description explaining my sample module"
+    - "Create a VLAN on an NFVIS host"
 
 options:
-    name:
+    vlan_id:
         description:
-            - This is the message to send to the sample module
+            - The VLAN ID of the VLAN.
         required: true
-    new:
+    state:
         description:
-            - Control to demo if the result of this module is changed or not
+            - The state of the VLAN (i.e. `present` or `absent`)
         required: false
-
-extends_documentation_fragment:
-    - azure
 
 author:
     - Your Name (@yourhandle)
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
-  my_new_test_module:
-    name: hello world
+# Create VLAN 10
+- nfvis_vlan:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    state: present
+    vlan_id: 100
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_new_test_module:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_new_test_module:
-    name: fail me
+# Delete VLAN 10
+- nfvis_vlan:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    state: absent
+    vlan_id: 100
 '''
 
 RETURN = '''

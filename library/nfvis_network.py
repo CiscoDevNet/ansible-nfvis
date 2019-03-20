@@ -8,7 +8,7 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = '''
 ---
-module: nfvis_upload
+module: nfvis_network
 
 short_description: This is my sample module
 
@@ -20,36 +20,61 @@ description:
 options:
     name:
         description:
-            - This is the message to send to the sample module
+            - Name of the network
         required: true
-    new:
+    state:
         description:
-            - Control to demo if the result of this module is changed or not
+            - The state if the network ('present' or 'absent')
         required: false
-
-extends_documentation_fragment:
-    - azure
+    bridge:
+        description:
+            - Name of the bridge to which the network is attached 
+        required: false
+    trunk:
+        description:
+            - Set network to trunk mode
+        required: false
+    sriov:
+        description:
+            - SR-IOV supported on the network
+        required: false
+    native_tagged:
+        description:
+            - Specifies if the netowrk is tagged or not
+        required: false
+    native_vlan:
+        description:
+            - Specifies a native VLAN. It sets the native characteristics when the interface is in trunk mode. If you do not configure a native VLAN, the default VLAN 1 is used as the native VLAN
+        required: false
+    vlan:
+        description:
+            - Specifies the VLAN ID when the network is in access mode (i.e NOT a trunk)
+        required: false
+        
 
 author:
-    - Your Name (@yourhandle)
+    - Steven Carter
 '''
 
 EXAMPLES = '''
-# Pass in a message
-- name: Test with a message
-  my_new_test_module:
-    name: hello world
+# Create a network in access mode with VLAN ID
+- nfvis_network:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: new-network
+    bridge: net-bridge
+    trunk: no
+    vlan: 100
+    state: present
 
-# pass in a message and have changed true
-- name: Test with a message and changed output
-  my_new_test_module:
-    name: hello world
-    new: true
-
-# fail the module
-- name: Test failure of the module
-  my_new_test_module:
-    name: fail me
+# Delete a network
+- nfvis_network:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+    name: new-network
+    state: absent
 '''
 
 RETURN = '''
