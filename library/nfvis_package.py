@@ -131,52 +131,9 @@ def run_module():
     if module.check_mode:
         return result
 
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    # result['original_message'] = module.params['name']
-
-    # use whatever logic you need to determine whether or not this module
-    # made any modifications to your target
-    # if module.params['new']:
-    #     result['changed'] = True
-
-    # Login
-    # session = requests.Session()
-    # data = {"login": module.params['user'], "password": module.params['password']}
-    # url = 'https://{0}/#/login'.format(module.params['host'])
-    # try:
-    #     response = response = session.post(url, data=data, verify=module.params['validate_certs'])
-    # except requests.exceptions.RequestException as e:  # This is the correct syntax
-    #     module.fail_json(msg=e, **result)
-    # result['cookies'] = session.cookies
-
-    # Get the list of images
-
-    # url = 'https://{0}/api/config/vm_lifecycle/images?deep'.format(module.params['host'])
-    # headers = {'Accept': 'application/json'}
-    # try:
-    #     response = requests.get(url, auth=(module.params['user'], module.params['password']), verify=module.params['validate_certs'],
-    #             headers=headers)
-    # except requests.exceptions.RequestException as e:  # This is the correct syntax
-    #     module.fail_json(msg=e, **result)
-
-    # url = 'https://{0}/v2/upload'.format(module.params['host'])
-    # files = {'file': (os.path.basename(module.params['file']), open(module.params['file'], 'rb'), 'application/x-gzip', {'Expires': '0'})}
-    # data = {'datastore':'datastore1'}
-    # try:
-    #     response = requests.post(url, verify=module.params['validate_certs'], auth=(module.params['user'], module.params['password']),
-    #             files=files, data=data)
-    #     response.raise_for_status()
-    # except requests.exceptions.RequestException as e:
-    #     module.fail_json(msg=e)
-    #
-    # if response.status_code not in [200]:
-    #     module.fail_json(msg=(response.status_code, response.content))
-
-
     # Get the list of existing deployments
-    url = 'https://{0}/api/config/vm_lifecycle/images?deep'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/config/vm_lifecycle/images?deep'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
 
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
@@ -219,14 +176,14 @@ def run_module():
             payload['image']['name'] = nfvis.params['name']
             payload['image']['src'] = 'file://{0}/{1}.tar.gz'.format(nfvis.params['dest'], nfvis.params['name'])
 
-            url = 'https://{0}/api/config/vm_lifecycle/images'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+            url_path = '/config/vm_lifecycle/images'
+            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in images_dict:
             # Delete the image
-            url = 'https://{0}/api/config/vm_lifecycle/images/image/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-            response = nfvis.request(url, 'DELETE')
+            url_path = '/config/vm_lifecycle/images/image/{0}'.format(nfvis.params['name'])
+            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
         else:
             nfvis.result['changed'] = False

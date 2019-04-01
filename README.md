@@ -60,7 +60,7 @@ The `build-package` task can be called to build the packages that can be uploade
 * `package_template`: The template from which the image_properties is derived.  This uses the default Ansible search
 behavior for templates.  Sock templates are located in `ansible-nfvis/tempaltes`.
 
-The `build-package` tasks looks for the image files used to build the packages in the directory specified by `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
+The `build-package` task looks for the image files used to build the packages in the directory specified by `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
 It builds the packages in the directory specified by `nfvis_temp_dir` (Default: /tmp/nfvis_packages) and stores the packages
 in the directory specified in `nfvis_package_dir` (Default: `"{{ playbook_dir }}/packages"`).
 
@@ -70,10 +70,10 @@ The default values for `nfvis_package_dir`, `nfvis_temp_dir`, and `nfvis_package
 
 ## Modules
 
-All modules requite authentication information for the NFVIS host:
+All modules require authentication information for the NFVIS host:
 * `host`: The address of the NFVIS device in which the API can be reached
 * `user`: The username with which to authenticate to the NFVIS API
-* `password`: The username with which to authenticate to the NFVIS API
+* `password`: The password with which to authenticate to the NFVIS API
 
 ### Configure System Settigns:
 ```yaml
@@ -92,7 +92,7 @@ All modules requite authentication information for the NFVIS host:
 
 ### Configure VLANs:
 
-The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
+The `nfvis_vlan` module maintains vlans on the switch:
 ```yaml
 - nfvis_vlan:
     host: 1.2.3.4
@@ -118,7 +118,7 @@ The `nfvis_vlan` module maintains vlans on the switch (i.e. requires ENCS):
 ```
 
 * `name`: Name of the bridge (required)
-* `state`: The state if the bridge ('present' or 'absent')
+* `state`: The state of the bridge ('present' or 'absent')
 * `ports`: List of ports to which the bridge is attached
 * `ip`: IP address and netmask of the bridge
 * `vlan`: VLAN tag

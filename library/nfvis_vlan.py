@@ -68,8 +68,7 @@ def main():
 
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
-                         vlan_id=dict(type='int', required=True),
-                         )
+                         vlan_id=dict(type='int', required=True))
 
     # seed the result dict in the object
     # we primarily care about changed and state
@@ -84,17 +83,15 @@ def main():
     # args/params passed to the execution, as well as if the module
     # supports check mode
     module = AnsibleModule(argument_spec=argument_spec,
-                           supports_check_mode=True,
-                           )
+                           supports_check_mode=True)
     nfvis = nfvisModule(module, function='vlan')
 
     payload = None
-    port = None
     nfvis.result['changed'] = False
 
     # Get the list of existing vlans
-    url = 'https://{0}/api/running/switch/vlan?deep'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/running/switch/vlan?deep'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name
@@ -115,12 +112,12 @@ def main():
 
         if nfvis.params['vlan_id'] not in vlan_dict:
             # The vlan does not exist on the device, so add it
-            url = 'https://{0}/api/running/switch'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+            url_path = '/running/switch'
+            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in vlan_dict:
-            url = 'https://{0}/api/running/switch/vlan/{1}'.format(nfvis.params['host'], nfvis.params['vlan_id'])
+            url = '/running/switch/vlan/{0}'.format(nfvis.params['vlan_id'])
             response = nfvis.request(url, 'DELETE')
             nfvis.result['changed'] = True
 

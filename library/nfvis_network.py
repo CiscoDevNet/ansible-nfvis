@@ -129,8 +129,8 @@ def main():
     nfvis.result['changed'] = False
 
     # Get the list of existing networks
-    url = 'https://{0}/api/config/networks?deep'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/config/networks?deep'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the network name
@@ -164,8 +164,8 @@ def main():
                 payload['network']['native-vlan'] = nfvis.params['native_vlan']
 
             # The network does not exist on the device, so add it
-            url = 'https://{0}/api/config/networks'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+            url_path = '/config/networks'
+            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
 
         else:
@@ -203,13 +203,13 @@ def main():
 
 
             if nfvis.result['changed'] == True:
-                url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+                url_path = '/config/networks/network/{0}'.format(nfvis.params['name'])
+                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
     else:
         if nfvis.params['name'] in network_dict:
-            url = 'https://{0}/api/config/networks/network/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-            response = nfvis.request(url, 'DELETE')
+            url_path = '/config/networks/network/{0}'.format(nfvis.params['name'])
+            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
 
 

@@ -3,11 +3,10 @@ from ansible.module_utils.basic import AnsibleModule, json, env_fallback
 from ansible.module_utils.urls import fetch_url
 from ansible.module_utils._text import to_native, to_bytes, to_text
 
-
 def nfvis_argument_spec():
-    return dict(host=dict(type='str', required=True, fallback=(env_fallback, ['nfvis_HOST'])),
-            user=dict(type='str', required=True, fallback=(env_fallback, ['nfvis_USER'])),
-            password=dict(type='str', required=True, fallback=(env_fallback, ['nfvis_PASSWORD'])),
+    return dict(host=dict(type='str', required=True, fallback=(env_fallback, ['NFVIS_HOST'])),
+            user=dict(type='str', required=True, fallback=(env_fallback, ['NFVIS_USER'])),
+            password=dict(type='str', required=True, fallback=(env_fallback, ['NFVIS_PASSWORD'])),
             validate_certs=dict(type='bool', required=False, default=False),
             timeout=dict(type='int', default=30)
     )
@@ -43,10 +42,12 @@ class nfvisModule(object):
         self.status = None
         self.url = None
         self.params['force_basic_auth'] = True
-        self.params['url_username'] = url_username = self.params['user']
+        self.params['url_username'] = self.params['user']
         self.params['url_password'] = self.params['password']
-
+        self.host = self.params['host']
         self.modifiable_methods = ['POST', 'PUT', 'DELETE']
+
+
 
         if function == 'vlan':
             self.headers = {'Content-Type': 'application/vnd.yang.data+json',
@@ -55,13 +56,17 @@ class nfvisModule(object):
             self.headers = {'Content-Type': 'application/vnd.yang.data+json',
                             'Accept': 'application/vnd.yang.data+json'}
 
-    def request(self, url, method=None, payload=None):
+    def _fallback(self, value, fallback):
+        if value is None:
+            return fallback
+        return value
+
+    def request(self, url_path, method=None, payload=None):
         """Generic HTTP method for nfvis requests."""
 
         if method is not None:
             self.method = method
-        # self.url = 'https://{host}/api/v0/{path}'.format(path=self.path.lstrip('/'), **self.params)
-        self.url = url
+        self.url = 'https://{0}/api{1}'.format(self.host, url_path)
         self.method = method
         self.payload = payload
 
@@ -74,7 +79,7 @@ class nfvisModule(object):
         self.response = info['msg']
         self.status = info['status']
 
-        if self.status >= 300:
+        if self.status >= 300 or self.status < 0:
             try:
                 self.fail_json(msg='Request failed for {url}: {status} - {msg}'.format(**info),
                                   body=json.loads(to_native(info['body'])))

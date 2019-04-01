@@ -94,8 +94,8 @@ def main():
     nfvis.result['changed'] = False
 
     # Get the list of existing vlans
-    url = 'https://{0}/api/config/system/settings'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/config/system/settings'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
 
     if nfvis.params['state'] == 'present':
@@ -107,8 +107,8 @@ def main():
             payload['settings']['trusted-source'] = nfvis.params['trusted_source']
             nfvis.result['changed'] = True
         if nfvis.result['changed'] == True:
-            url = 'https://{0}/api/config/system/settings'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+            url_path = '/config/system/settings'
+            response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
 
     # if the user is working with this module in only check mode we do not

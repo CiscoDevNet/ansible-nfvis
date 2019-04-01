@@ -145,8 +145,8 @@ def main():
     response = {}
 
     # Get the list of existing deployments
-    url = 'https://{0}/api/config/vm_lifecycle/tenants/tenant/admin/deployments?deep'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments?deep'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
@@ -257,13 +257,13 @@ def main():
 
 
             nfvis.result['payload'] = payload
-            url = 'https://{0}/api/config/vm_lifecycle/tenants/tenant/admin/deployments'.format(nfvis.params['host'])
-            response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+            url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments'
+            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in deployment_dict:
-            url = 'https://{0}/api/config/vm_lifecycle/tenants/tenant/admin/deployments/deployment/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-            response = nfvis.request(url, 'DELETE')
+            url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments/deployment/{0}'.format(nfvis.params['name'])
+            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
 
 

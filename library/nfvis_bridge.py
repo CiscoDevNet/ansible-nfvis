@@ -110,8 +110,8 @@ def main():
     nfvis.result['changed'] = False
 
     # Get the list of existing bridges
-    url = 'https://{0}/api/config/bridges?deep'.format(nfvis.params['host'])
-    response = nfvis.request(url, method='GET')
+    url_path = '/config/bridges?deep'
+    response = nfvis.request(url_path, method='GET')
     nfvis.result['data'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name
@@ -160,11 +160,11 @@ def main():
 
             if nfvis.params['name'] in bridge_dict:
                 # We are overwritting (purging) what is on the NFVIS host
-                url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+                url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
+                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
             else:
-                url = 'https://{0}/api/config/bridges'.format(nfvis.params['host'])
-                response = nfvis.request(url, method='POST', payload=json.dumps(payload))
+                url_path = '/config/bridges'
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
 
             nfvis.result['changed'] = True
         else:
@@ -223,13 +223,13 @@ def main():
                         module.fail_json(msg="netmask must be specified for ip")
 
             if nfvis.result['changed'] == True:
-                url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-                response = nfvis.request(url, method='PUT', payload=json.dumps(payload))
+                url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
+                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
     else:
         if nfvis.params['name'] in bridge_dict:
-            url = 'https://{0}/api/config/bridges/bridge/{1}'.format(nfvis.params['host'], nfvis.params['name'])
-            response = nfvis.request(url, 'DELETE')
+            url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
+            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
 
 
