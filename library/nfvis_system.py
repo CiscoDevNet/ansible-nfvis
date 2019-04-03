@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
@@ -62,6 +64,13 @@ from ansible.module_utils.basic import AnsibleModule, json, env_fallback
 from ansible.module_utils._text import to_native
 from ansible.module_utils.nfvis import nfvisModule, nfvis_argument_spec
 
+try:
+    import netaddr
+    HAS_NETADDR = True
+except:
+    HAS_NETADDR = False
+
+
 def main():
     # define the available arguments/parameters that a user can pass to
     # the module
@@ -69,7 +78,9 @@ def main():
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
                          hostname=dict(type='str'),
-                         trusted_source=dict(type='list')
+                         trusted_source=dict(type='list'),
+                         dpdk=dict(type='bool'),
+                         mgmt=dict(type='str'),
                          )
 
     # seed the result dict in the object
@@ -87,6 +98,10 @@ def main():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
+
+    if not HAS_NETADDR:
+        module.fail_json(msg='Could not import the python library netaddr required by this module')
+
     nfvis = nfvisModule(module, function='system')
 
     payload = None
@@ -101,11 +116,30 @@ def main():
     if nfvis.params['state'] == 'present':
         payload = {'settings':response['system:settings']}
         if nfvis.params['hostname'] and nfvis.params['hostname'] != payload['settings']['hostname']:
-            payload['settings']['hostname'] = nfvis.params['hostname']
+            hostname = nfvis.params['hostname'].split('.')[0]
+            payload['settings']['hostname'] = hostname
             nfvis.result['changed'] = True
         if nfvis.params['trusted_source'] and (('trusted-source' in payload['settings'] and nfvis.params['trusted_source'] != payload['settings']['trusted-source']) or ('trusted-source' not in payload['settings'])):
             payload['settings']['trusted-source'] = nfvis.params['trusted_source']
             nfvis.result['changed'] = True
+        if nfvis.params['dpdk'] and (('dpdk' in payload['settings'] and nfvis.params['dpdk'] != payload['settings']['dpdk']) or ('dpdk' not in payload['settings'])):
+            payload['settings']['dpdk'] = ['disable', 'enable'][nfvis.params['dpdk'] == True]
+            nfvis.result['changed'] = True
+        if nfvis.params['mgmt']:
+            if nfvis.params['mgmt'] == 'dhcp':
+                payload['settings']['mgmt']['dhcp'] = None
+            else:
+                try:
+                    mgmt_ip = netaddr.IPNetwork(nfvis.params['mgmt'])
+                except ValueError:
+                    module.fail_json(msg="mgmt address/netmask is invalid: {0}".format(nfvis.params['mgmt']))
+                payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
+            nfvis.result['changed'] = True
+        else:
+            try:
+                del payload['settings']['mgmt']
+            except KeyError:
+                pass
         if nfvis.result['changed'] == True:
             url_path = '/config/system/settings'
             response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
