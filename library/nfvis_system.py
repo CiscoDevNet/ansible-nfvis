@@ -76,11 +76,11 @@ def main():
     # the module
 
     argument_spec = nfvis_argument_spec()
-    argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
-                         hostname=dict(type='str'),
+    argument_spec.update(hostname=dict(type='str', required=True),
                          trusted_source=dict(type='list'),
                          dpdk=dict(type='bool'),
-                         mgmt=dict(type='str'),
+                         mgmt=dict(type='str', required=True),
+                         default_gw=dict(type='str')
                          )
 
     # seed the result dict in the object
@@ -111,37 +111,43 @@ def main():
     # Get the list of existing vlans
     url_path = '/config/system/settings'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['data'] = response
+    nfvis.result['current'] = response
+    nfvis.result['what_changed'] = []
 
-    if nfvis.params['state'] == 'present':
-        payload = {'settings':response['system:settings']}
-        if nfvis.params['hostname'] and nfvis.params['hostname'] != payload['settings']['hostname']:
-            hostname = nfvis.params['hostname'].split('.')[0]
-            payload['settings']['hostname'] = hostname
-            nfvis.result['changed'] = True
-        if nfvis.params['trusted_source'] and (('trusted-source' in payload['settings'] and nfvis.params['trusted_source'] != payload['settings']['trusted-source']) or ('trusted-source' not in payload['settings'])):
-            payload['settings']['trusted-source'] = nfvis.params['trusted_source']
-            nfvis.result['changed'] = True
-        if nfvis.params['dpdk'] and (('dpdk' in payload['settings'] and nfvis.params['dpdk'] != payload['settings']['dpdk']) or ('dpdk' not in payload['settings'])):
-            payload['settings']['dpdk'] = ['disable', 'enable'][nfvis.params['dpdk'] == True]
-            nfvis.result['changed'] = True
-        if nfvis.params['mgmt']:
-            if nfvis.params['mgmt'] == 'dhcp':
-                payload['settings']['mgmt']['dhcp'] = None
-            else:
-                try:
-                    mgmt_ip = netaddr.IPNetwork(nfvis.params['mgmt'])
-                except ValueError:
-                    module.fail_json(msg="mgmt address/netmask is invalid: {0}".format(nfvis.params['mgmt']))
-                payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
-            nfvis.result['changed'] = True
+    payload = {'settings':response['system:settings']}
+    if nfvis.params['hostname'] and nfvis.params['hostname'].split('.')[0] != payload['settings']['hostname']:
+        payload['settings']['hostname'] = nfvis.params['hostname'].split('.')[0]
+        nfvis.result['what_changed'].append('hostname')
+    if nfvis.params['trusted_source'] and (('trusted-source' in payload['settings'] and nfvis.params['trusted_source'] != payload['settings']['trusted-source']) or ('trusted-source' not in payload['settings'])):
+        payload['settings']['trusted-source'] = nfvis.params['trusted_source']
+        nfvis.result['what_changed'].append('trusted_source')
+    if nfvis.params['dpdk'] and (('dpdk' in payload['settings'] and nfvis.params['dpdk'] != payload['settings']['dpdk']) or ('dpdk' not in payload['settings'])):
+        payload['settings']['dpdk'] = ['disable', 'enable'][nfvis.params['dpdk'] == True]
+        nfvis.result['what_changed'].append('dpdk')
+    if nfvis.params['mgmt']:
+        if nfvis.params['mgmt'] == 'dhcp' and 'dhcp' not in payload['settings']['mgmt']:
+            payload['settings']['mgmt']['dhcp'] = None
+            nfvis.result['what_changed'].append('mgmt')
         else:
             try:
-                del payload['settings']['mgmt']
-            except KeyError:
-                pass
-        if nfvis.result['changed'] == True:
-            url_path = '/config/system/settings'
+                mgmt_ip = netaddr.IPNetwork(nfvis.params['mgmt'])
+            except ValueError:
+                module.fail_json(msg="mgmt address/netmask is invalid: {0}".format(nfvis.params['mgmt']))
+            if payload['settings']['mgmt']['ip']['address'] != str(mgmt_ip.ip) or payload['settings']['mgmt']['ip']['netmask'] != str(mgmt_ip.netmask):
+                payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
+                nfvis.result['what_changed'].append('mgmt')
+    else:
+        try:
+            del payload['settings']['mgmt']
+        except KeyError:
+            pass
+    if nfvis.params['default_gw'] and nfvis.params['default_gw'] != payload['settings']['default-gw']:
+        payload['settings']['default-gw'] = nfvis.params['default_gw']
+        nfvis.result['what_changed'].append('default_gw')
+    if nfvis.result['what_changed']:
+        nfvis.result['changed'] == True
+        url_path = '/config/system/settings'
+        if not module.check_mode:
             response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
 
@@ -149,8 +155,8 @@ def main():
     # want to make any changes to the environment, just return the current
     # state with no modifications
     # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        nfvis.exit_json(**nfvis.result)
+    # if module.check_mode:
+    #     nfvis.exit_json(**nfvis.result)
 
     # execute checks for argument completeness
 

@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
+
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -134,7 +137,7 @@ def run_module():
     # Get the list of existing deployments
     url_path = '/config/vm_lifecycle/images?deep'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['data'] = response
+    nfvis.result['current'] = response
 
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
     images_dict = {}
@@ -166,8 +169,8 @@ def run_module():
 
             try:
                 with SCPClient(ssh.get_transport()) as scp:
-                    scp.put(module.params['file'], '/data/intdatastore/uploads')
-            except scp.SCPException as e:
+                    scp.put(module.params['file'], '/data/intdatastore/uploads/{0}.tar.gz'.format(nfvis.params['name']))
+            except Exception as e:
                 module.fail_json(msg="Operation error: %s" % e)
 
             scp.close()

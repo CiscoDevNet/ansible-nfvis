@@ -96,7 +96,7 @@ def main():
 
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
-                         name=dict(type='str', aliases=['network']),
+                         name=dict(type='str', required=True, aliases=['network']),
                          bridge=dict(type='str', required=True),
                          trunk=dict(type='bool', default=True),
                          sriov=dict(type='bool', default=False),
@@ -131,7 +131,8 @@ def main():
     # Get the list of existing networks
     url_path = '/config/networks?deep'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['data'] = response
+    nfvis.result['current'] = response
+    nfvis.result['what_changed'] = []
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the network name
     network_dict = {}
@@ -154,7 +155,7 @@ def main():
             payload['network']['name'] = nfvis.params['name']
             payload['network']['bridge'] = nfvis.params['bridge']
             if nfvis.params['trunk'] == False:
-                payload['network']['bridge'] = nfvis.params['trunk']
+                payload['network']['trunk'] = nfvis.params['trunk']
                 if nfvis.params['vlan']:
                     payload['network']['vlan'] = nfvis.params['vlan']
 
@@ -174,56 +175,44 @@ def main():
 
             if payload['network']['bridge'] != nfvis.params['bridge']:
                 payload['network']['bridge'] = nfvis.params['bridge']
-                nfvis.result['changed'] = True
+                nfvis.result['what_changed'].append('bridge')
 
             if nfvis.params['trunk'] == False:
                 if 'trunk' not in payload['network'] or payload['network']['trunk'] == True:
                     payload['network']['trunk'] = False
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('trunk')
                 if nfvis.params['vlan']:
                     if 'vlan' not in payload['network'] or nfvis.params['vlan'] not in payload['network']['vlan']:
                         payload['network']['vlan'] = nfvis.params['vlan']
-                        nfvis.result['changed'] = True
+                        nfvis.result['what_changed'].append('vlan')
 
             if nfvis.params['sriov']:
                 if 'sriov' not in payload['network'] or nfvis.params['sriov'] != payload['network']['sriov']:
                     payload['network']['sriov'] = nfvis.params['sriov']
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('sriov')
 
             if nfvis.params['native_tagged']:
                 if 'native_tagged' not in payload['network'] or nfvis.params['native_tagged'] != payload['network']['native_tagged']:
                     payload['network']['native_tagged'] = nfvis.params['native_tagged']
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('native_tagged')
 
             if nfvis.params['native_vlan']:
                 if 'native_vlan' not in payload['network'] or nfvis.params['native_vlan'] != payload['network']['native_vlan']:
                     payload['network']['native_vlan'] = nfvis.params['native_vlan']
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('native_vlan')
 
-
-
-            if nfvis.result['changed'] == True:
+            if nfvis.result['what_changed']:
                 url_path = '/config/networks/network/{0}'.format(nfvis.params['name'])
-                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
+                nfvis.result['changed'] = True
+                if not module.check_mode:
+                    response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
     else:
         if nfvis.params['name'] in network_dict:
             url_path = '/config/networks/network/{0}'.format(nfvis.params['name'])
-            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
-
-
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        nfvis.exit_json(**nfvis.result)
-
-    # execute checks for argument completeness
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
+            if not module.check_mode:
+                response = nfvis.request(url_path, 'DELETE')
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results

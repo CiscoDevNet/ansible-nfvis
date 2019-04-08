@@ -82,12 +82,16 @@ All modules require authentication information for the NFVIS host:
     host: 1.2.3.4
     user: admin
     password: cisco
+    mgmt: 2.3.4.5/24
+    gateway_ip: 2.3.4.1
     hostname: "{{ inventory_hostname }}"
     trusted_source:
       - 0.0.0.0/0
 ```
 
-* `hostname`: The hostname of the NFVIS host
+* `hostname`: The hostname of the NFVIS host (required)
+* `mgmt`: The management IP of the NFVIS host in CIDR notation or `dhcp` for DHCP (required)
+* `gateway_ip`: The IP address of the gateway of the NFVIS host
 * `trusted_source`: A list of trusted sources in CIDR notation
 
 ### Configure VLANs:

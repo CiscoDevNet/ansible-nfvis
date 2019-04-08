@@ -1,3 +1,6 @@
+
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
 import os
 from ansible.module_utils.basic import AnsibleModule, json, env_fallback
 from ansible.module_utils.urls import fetch_url

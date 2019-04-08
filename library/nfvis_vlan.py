@@ -92,7 +92,7 @@ def main():
     # Get the list of existing vlans
     url_path = '/running/switch/vlan?deep'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['data'] = response
+    nfvis.result['current'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name
     vlan_dict = {}

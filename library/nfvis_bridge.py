@@ -112,8 +112,9 @@ def main():
     # Get the list of existing bridges
     url_path = '/config/bridges?deep'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['data'] = response
-    
+    nfvis.result['current'] = response
+    nfvis.result['what_changed'] = []
+
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name
     bridge_dict = {}
     try:
@@ -178,7 +179,7 @@ def main():
                     # No ports are on the NFVIS host, so add them all
                     for port in nfvis.params['ports']:
                         payload['bridge']['port'].append({'name': port})
-                    nfvis.result['changed'] = True
+                        nfvis.result['what_changed'].append('port')
                 else:
                     # Add the ports that are not already on the NFVIS host
                     existing_ports = []
@@ -187,63 +188,53 @@ def main():
                     for port in nfvis.params['ports']:
                         if port not in existing_ports:
                             payload['bridge']['port'].append({'name': port})
-                            nfvis.result['changed'] = True
+                            nfvis.result['what_changed'].append('port')
 
             if nfvis.params['vlan']:
                 if 'vlan' not in payload['bridge'] or nfvis.params['vlan'] != payload['bridge']['vlan']:
                     payload['bridge']['vlan'] = nfvis.params['vlan']
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('vlan')
 
             if nfvis.params['dhcp']:
                 if nfvis.params['dhcp'] == True and 'dhcp' not in payload['bridge']:
                     payload['bridge']['dhcp'] = [ nfvis.params['dhcp'] ]
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('dhcp')
                 elif nfvis.params['dhcp'] == False and 'dhcp' in payload['bridge']:
                     payload['bridge']['dhcp'] = None
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('dhcp')
 
             if nfvis.params['ip']:
                 if 'ip' not in payload['bridge']:
                     # No ip on the NFVIS host, so add the entire dict
                     payload['bridge']['ip'] = nfvis.params['ip']
-                    nfvis.result['changed'] = True
+                    nfvis.result['what_changed'].append('ip')
                 else:
                     if 'address' in nfvis.params['ip']:
                         if payload['bridge']['ip']['address'] != nfvis.params['ip']['address']:
                             payload['bridge']['ip']['address'] = nfvis.params['ip']['address']
-                            nfvis.result['changed'] = True
+                            nfvis.result['what_changed'].append('ip')
                     else:
                         module.fail_json(msg="address must be specified for ip")
 
                     if 'netmask' in nfvis.params['ip']:
                         if payload['bridge']['ip']['netmask'] != nfvis.params['ip']['netmask']:
                             payload['bridge']['ip']['netmask'] = nfvis.params['ip']['netmask']
-                            nfvis.result['changed'] = True
+                            nfvis.result['what_changed'].append('ip')
                     else:
                         module.fail_json(msg="netmask must be specified for ip")
 
-            if nfvis.result['changed'] == True:
+            if nfvis.result['what_changed']:
                 url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
-                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
+                nfvis.result['changed'] = True
+                if not module.check_mode:
+                    response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
 
     else:
         if nfvis.params['name'] in bridge_dict:
             url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
-            response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
-
-
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        nfvis.exit_json(**nfvis.result)
-
-    # execute checks for argument completeness
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
+            if not module.check_mode:
+                response = nfvis.request(url_path, 'DELETE')
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
