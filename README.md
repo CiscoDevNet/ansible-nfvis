@@ -75,7 +75,7 @@ All modules require authentication information for the NFVIS host:
 * `user`: The username with which to authenticate to the NFVIS API
 * `password`: The password with which to authenticate to the NFVIS API
 
-### Configure System Settigns:
+### Configure System Settings:
 ```yaml
 - name: Configure system
   nfvis_system:

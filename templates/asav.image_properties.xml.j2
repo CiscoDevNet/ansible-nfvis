@@ -7,10 +7,10 @@
   <root_file_disk_bus>virtio</root_file_disk_bus>
   <root_image_disk_format>qcow2</root_image_disk_format>
   <vcpu_min>1</vcpu_min>
-  <vcpu_max>4</vcpu_max>
+  <vcpu_max>8</vcpu_max>
   <memory_mb_min>1024</memory_mb_min>
-  <memory_mb_max>8192</memory_mb_max>
-  <vnic_max>3</vnic_max>
+  <memory_mb_max>16384</memory_mb_max>
+  <vnic_max>8</vnic_max>
   <vnic_names>vnics:1:GigabitEthernet0/0</vnic_names>
   <vnic_names>vnics:2:GigabitEthernet0/1</vnic_names>
   <root_disk_gb_min>8</root_disk_gb_min>
@@ -27,7 +27,7 @@
       <name>asav5</name>
       <description>asav5 profile</description>
       <vcpus>1</vcpus>
-      <memory_mb>1024</memory_mb>
+      <memory_mb>1536</memory_mb>
       <root_disk_mb>8192</root_disk_mb>
     </profile>
     <profile>
@@ -49,6 +49,13 @@
       <description>asav30 profile</description>
       <vcpus>4</vcpus>
       <memory_mb>8192</memory_mb>
+      <root_disk_mb>16384</root_disk_mb>
+    </profile>
+    <profile>
+      <name>asav50</name>
+      <description>asav30 profile</description>
+      <vcpus>8</vcpus>
+      <memory_mb>16384</memory_mb>
       <root_disk_mb>16384</root_disk_mb>
     </profile>
   </profiles>

@@ -84,14 +84,14 @@ def main():
     # supports check mode
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True)
-    nfvis = nfvisModule(module, function='vlan')
+    nfvis = nfvisModule(module)
 
     payload = None
     nfvis.result['changed'] = False
 
     # Get the list of existing vlans
     url_path = '/running/switch/vlan?deep'
-    response = nfvis.request(url_path, method='GET')
+    response = nfvis.request(url_path, method='GET', operation='get_vlan')
     nfvis.result['current'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the bridge name

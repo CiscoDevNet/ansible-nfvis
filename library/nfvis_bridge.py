@@ -103,7 +103,7 @@ def main():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
-    nfvis = nfvisModule(module, function='bridge')
+    nfvis = nfvisModule(module)
 
     payload = None
     port = None

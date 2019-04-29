@@ -122,7 +122,7 @@ def main():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
-    nfvis = nfvisModule(module, function='network')
+    nfvis = nfvisModule(module)
 
     payload = None
     port = None

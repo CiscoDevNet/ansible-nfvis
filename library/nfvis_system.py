@@ -102,7 +102,7 @@ def main():
     if not HAS_NETADDR:
         module.fail_json(msg='Could not import the python library netaddr required by this module')
 
-    nfvis = nfvisModule(module, function='system')
+    nfvis = nfvisModule(module)
 
     payload = None
     port = None
@@ -133,7 +133,7 @@ def main():
                 mgmt_ip = netaddr.IPNetwork(nfvis.params['mgmt'])
             except ValueError:
                 module.fail_json(msg="mgmt address/netmask is invalid: {0}".format(nfvis.params['mgmt']))
-            if payload['settings']['mgmt']['ip']['address'] != str(mgmt_ip.ip) or payload['settings']['mgmt']['ip']['netmask'] != str(mgmt_ip.netmask):
+            if 'address' not in payload['settings']['mgmt']['ip'] or payload['settings']['mgmt']['ip']['address'] != str(mgmt_ip.ip) or 'netmask' not in payload['settings']['mgmt']['ip'] or payload['settings']['mgmt']['ip']['netmask'] != str(mgmt_ip.netmask):
                 payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
                 nfvis.result['what_changed'].append('mgmt')
     else:
@@ -145,7 +145,7 @@ def main():
         payload['settings']['default-gw'] = nfvis.params['default_gw']
         nfvis.result['what_changed'].append('default_gw')
     if nfvis.result['what_changed']:
-        nfvis.result['changed'] == True
+        nfvis.result['changed'] = True
         url_path = '/config/system/settings'
         if not module.check_mode:
             response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))

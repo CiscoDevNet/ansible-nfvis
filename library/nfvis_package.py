@@ -114,7 +114,7 @@ def run_module():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
-    nfvis = nfvisModule(module, function='package')
+    nfvis = nfvisModule(module)
 
     if not HAS_PARAMIKO:
         module.fail_json(
@@ -134,7 +134,7 @@ def run_module():
     if module.check_mode:
         return result
 
-    # Get the list of existing deployments
+    # Get the list of existing packages
     url_path = '/config/vm_lifecycle/images?deep'
     response = nfvis.request(url_path, method='GET')
     nfvis.result['current'] = response
@@ -186,20 +186,21 @@ def run_module():
         if nfvis.params['name'] in images_dict:
             # Delete the image
             url_path = '/config/vm_lifecycle/images/image/{0}'.format(nfvis.params['name'])
-            response = nfvis.request(url_path, 'DELETE')
+            response = nfvis.request(url_path, method='DELETE')
+
+            # Delete the file
+            filename = (images_dict[nfvis.params['name']]['src'].split('://'))[1]
+            payload = {
+                'input': { 'name': filename }
+            }
+
+            url_path = '/operations/system/file-delete/file'
+            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
+
         else:
             nfvis.result['changed'] = False
-        # Delete the file
-        # payload = {
-        #     'image': { 'name': '{0}.tar.gz'.format(nfvis.params['name']) }
-        # }
-        #
-        # url = 'https://{0}/api/operations/system/file-delete/file'.format(nfvis.params['host'], nfvis.params['name'])
-        # response = nfvis.request(url, method='POST', payload=json.dumps(payload))
-        #
-        # if nfvis.status == 204:
-        #     nfvis.result['changed'] = True
+
 
 
     # if the user is working with this module in only check mode we do not

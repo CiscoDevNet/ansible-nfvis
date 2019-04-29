@@ -105,8 +105,8 @@ def main():
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
                          name=dict(type='str', aliases=['deployment']),
-                         image=dict(type='str', required=True),
-                         flavor=dict(type='str', required=True),
+                         image=dict(type='str'),
+                         flavor=dict(type='str'),
                          bootup_time=dict(type='int', default=-1),
                          recovery_wait_time=dict(type='int', default=0),
                          kpi_data=dict(type='bool', default=False),
@@ -138,7 +138,7 @@ def main():
     module = AnsibleModule(argument_spec=argument_spec,
                            supports_check_mode=True,
                            )
-    nfvis = nfvisModule(module, function='deployment')
+    nfvis = nfvisModule(module)
 
     payload = None
     port = None
@@ -171,8 +171,14 @@ def main():
             payload['deployment']['name'] = nfvis.params['name']
             payload['deployment']['vm_group'] = {}
             payload['deployment']['vm_group']['name'] = nfvis.params['name']
-            payload['deployment']['vm_group']['image'] = nfvis.params['image']
-            payload['deployment']['vm_group']['flavor'] = nfvis.params['flavor']
+            if nfvis.params['image']:
+                payload['deployment']['vm_group']['image'] = nfvis.params['image']
+            else:
+                module.fail_json(msg="image must be specified when state is present")
+            if nfvis.params['flavor']:
+                payload['deployment']['vm_group']['flavor'] = nfvis.params['flavor']
+            else:
+                module.fail_json(msg="flavor must be specified when state is present")
             payload['deployment']['vm_group']['bootup_time'] = nfvis.params['bootup_time']
             payload['deployment']['vm_group']['recovery_wait_time'] = nfvis.params['recovery_wait_time']
             payload['deployment']['vm_group']['kpi_data'] = {}
@@ -214,7 +220,8 @@ def main():
                        entry['interface']['network'] = item['network']
                     else:
                         module.fail_json(msg="network must be specified for interface")
-                    entry['interface']['model'] = item.get('model', 'virtio')
+                    if 'model' in item:
+                        entry['interface']['model'] = item['model']
                     if index == 0 and 'port' in port_forwarding:
                        entry['interface']['port_forwarding'] = port_forwarding
                     payload['deployment']['vm_group']['interfaces'].append(entry)

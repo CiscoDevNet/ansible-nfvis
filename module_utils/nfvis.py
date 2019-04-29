@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import os
@@ -50,22 +49,21 @@ class nfvisModule(object):
         self.host = self.params['host']
         self.modifiable_methods = ['POST', 'PUT', 'DELETE']
 
-
-
-        if function == 'vlan':
-            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
-                            'Accept': 'application/vnd.yang.collection+json'}
-        else:
-            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
-                            'Accept': 'application/vnd.yang.data+json'}
-
     def _fallback(self, value, fallback):
         if value is None:
             return fallback
         return value
 
-    def request(self, url_path, method=None, payload=None):
+    def request(self, url_path, method=None, payload=None, operation=None):
         """Generic HTTP method for nfvis requests."""
+
+
+        if operation in ['get_vlan', 'get_files']:
+            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
+                            'Accept': 'application/vnd.yang.collection+json'}
+        else:
+            self.headers = {'Content-Type': 'application/vnd.yang.data+json',
+                            'Accept': 'application/vnd.yang.data+json'}
 
         if method is not None:
             self.method = method

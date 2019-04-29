@@ -38,26 +38,33 @@
     <bootstrap_file_2>iosxe_config.txt</bootstrap_file_2>
     <profiles>
         <profile>
-            <name>isrv-mini</name>
-            <description>isrv-mini</description>
-            <vcpus>1</vcpus>
-            <memory_mb>4096</memory_mb>
-            <root_disk_mb>8192</root_disk_mb>
-        </profile>
-        <profile>
             <name>isrv-small</name>
             <description>isrv-small</description>
-            <vcpus>2</vcpus>
+            <vcpus>1</vcpus>
             <memory_mb>4096</memory_mb>
             <root_disk_mb>8192</root_disk_mb>
         </profile>
         <profile>
             <name>isrv-medium</name>
             <description>isrv-medium</description>
-            <vcpus>4</vcpus>
+            <vcpus>2</vcpus>
             <memory_mb>4096</memory_mb>
             <root_disk_mb>8192</root_disk_mb>
         </profile>
+        <profile>
+            <name>isrv-large</name>
+            <description>isrv-large</description>
+            <vcpus>4</vcpus>
+            <memory_mb>8192</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+        </profile>
+        <profile>
+            <name>isrv-xlarge</name>
+            <description>isrv-xlarge</description>
+            <vcpus>8</vcpus>
+            <memory_mb>4096</memory_mb>
+            <root_disk_mb>16384</root_disk_mb>
+        </profile>
     </profiles>
-    <default_profile>isrv-small</default_profile>
+    <default_profile>isrv-medium</default_profile>
 </image_properties>
