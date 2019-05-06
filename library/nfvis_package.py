@@ -135,8 +135,7 @@ def run_module():
         return result
 
     # Get the list of existing packages
-    url_path = '/config/vm_lifecycle/images?deep'
-    response = nfvis.request(url_path, method='GET')
+    response = nfvis.request('/config/vm_lifecycle/images?deep')
     nfvis.result['current'] = response
 
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
@@ -180,13 +179,15 @@ def run_module():
             payload['image']['src'] = 'file://{0}/{1}.tar.gz'.format(nfvis.params['dest'], nfvis.params['name'])
 
             url_path = '/config/vm_lifecycle/images'
-            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in images_dict:
             # Delete the image
             url_path = '/config/vm_lifecycle/images/image/{0}'.format(nfvis.params['name'])
-            response = nfvis.request(url_path, method='DELETE')
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='DELETE')
 
             # Delete the file
             filename = (images_dict[nfvis.params['name']]['src'].split('://'))[1]
@@ -195,7 +196,8 @@ def run_module():
             }
 
             url_path = '/operations/system/file-delete/file'
-            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
 
         else:
@@ -207,8 +209,8 @@ def run_module():
     # want to make any changes to the environment, just return the current
     # state with no modifications
     # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        module.exit_json(**nfvis.result)
+    # if module.check_mode:
+    #     module.exit_json(**nfvis.result)
 
     # execute checks for argument completeness
 

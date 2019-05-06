@@ -147,7 +147,7 @@ def main():
     # Get the list of existing deployments
     url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments?deep'
     response = nfvis.request(url_path, method='GET')
-    nfvis.result['current'] = response
+    # nfvis.result['current'] = response
     
     # Turn the list of dictionaries returned in the call into a dictionary of dictionaries hashed by the deployment name
     deployment_dict = {}
@@ -265,12 +265,14 @@ def main():
 
             nfvis.result['payload'] = payload
             url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments'
-            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in deployment_dict:
             url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments/deployment/{0}'.format(nfvis.params['name'])
-            response = nfvis.request(url_path, 'DELETE')
+            if not module.check_mode:
+                response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True
 
 
@@ -278,8 +280,8 @@ def main():
     # want to make any changes to the environment, just return the current
     # state with no modifications
     # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        module.exit_json(**nfvis.result)
+    # if module.check_mode:
+    #     nfvis.exit_json(**nfvis.result)
 
     # execute checks for argument completeness
 
@@ -288,7 +290,7 @@ def main():
 
     # in the event of a successful module execution, you will want to
     # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**nfvis.result)
+    nfvis.exit_json(**nfvis.result)
 
 
 if __name__ == '__main__':

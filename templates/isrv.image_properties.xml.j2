@@ -31,7 +31,11 @@
     <pcie_driver_list>i40evf</pcie_driver_list>
     <monitoring_supported>true</monitoring_supported>
     <monitoring_methods>ICMPPing</monitoring_methods>
+{% if package_options.low_latency is defined %}
+    <low_latency>{{ 'true' if package_options.low_latency is sameas true else 'false' }}</low_latency>
+{% else %}
     <low_latency>true</low_latency>
+{% endif %}
     <privileged_vm>true</privileged_vm>
     <cdrom>true</cdrom>
     <bootstrap_file_1>ovf-env.xml</bootstrap_file_1>

@@ -110,8 +110,7 @@ def main():
     nfvis.result['changed'] = False
 
     # Get the list of existing bridges
-    url_path = '/config/bridges?deep'
-    response = nfvis.request(url_path, method='GET')
+    response = nfvis.request('/config/bridges?deep')
     nfvis.result['current'] = response
     nfvis.result['what_changed'] = []
 
@@ -162,10 +161,12 @@ def main():
             if nfvis.params['name'] in bridge_dict:
                 # We are overwritting (purging) what is on the NFVIS host
                 url_path = '/config/bridges/bridge/{0}'.format(nfvis.params['name'])
-                response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
+                if not module.check_mode:
+                    response = nfvis.request(url_path, method='PUT', payload=json.dumps(payload))
             else:
                 url_path = '/config/bridges'
-                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+                if not module.check_mode:
+                    response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
 
             nfvis.result['changed'] = True
         else:

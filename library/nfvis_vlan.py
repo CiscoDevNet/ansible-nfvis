@@ -113,12 +113,14 @@ def main():
         if nfvis.params['vlan_id'] not in vlan_dict:
             # The vlan does not exist on the device, so add it
             url_path = '/running/switch'
-            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in vlan_dict:
             url = '/running/switch/vlan/{0}'.format(nfvis.params['vlan_id'])
-            response = nfvis.request(url, 'DELETE')
+            if not module.check_mode:
+                response = nfvis.request(url, 'DELETE')
             nfvis.result['changed'] = True
 
 
@@ -126,8 +128,8 @@ def main():
     # want to make any changes to the environment, just return the current
     # state with no modifications
     # FIXME: Work with nfvis so they can implement a check mode
-    if module.check_mode:
-        nfvis.exit_json(**nfvis.result)
+    # if module.check_mode:
+    #     nfvis.exit_json(**nfvis.result)
 
     # execute checks for argument completeness
 

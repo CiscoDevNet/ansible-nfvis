@@ -97,7 +97,7 @@ def main():
     argument_spec = nfvis_argument_spec()
     argument_spec.update(state=dict(type='str', choices=['absent', 'present'], default='present'),
                          name=dict(type='str', required=True, aliases=['network']),
-                         bridge=dict(type='str', required=True),
+                         bridge=dict(type='str'),
                          trunk=dict(type='bool', default=True),
                          sriov=dict(type='bool', default=False),
                          native_tagged=dict(type='bool'),
@@ -153,7 +153,11 @@ def main():
             # Construct the payload
             payload = {'network': {}}
             payload['network']['name'] = nfvis.params['name']
-            payload['network']['bridge'] = nfvis.params['bridge']
+            if nfvis.params['bridge']:
+                payload['network']['bridge'] = nfvis.params['bridge']
+            else:
+                module.fail_json(msg="bridge must be specified when state is present")
+
             if nfvis.params['trunk'] == False:
                 payload['network']['trunk'] = nfvis.params['trunk']
                 if nfvis.params['vlan']:
@@ -166,7 +170,8 @@ def main():
 
             # The network does not exist on the device, so add it
             url_path = '/config/networks'
-            response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
+            if not module.check_mode:
+                response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
 
         else:

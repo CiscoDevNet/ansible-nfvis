@@ -10,7 +10,7 @@ def nfvis_argument_spec():
             user=dict(type='str', required=True, fallback=(env_fallback, ['NFVIS_USER'])),
             password=dict(type='str', required=True, fallback=(env_fallback, ['NFVIS_PASSWORD'])),
             validate_certs=dict(type='bool', required=False, default=False),
-            timeout=dict(type='int', default=30)
+            timeout=dict(type='int', default=60)
     )
 
 
@@ -54,7 +54,7 @@ class nfvisModule(object):
             return fallback
         return value
 
-    def request(self, url_path, method=None, payload=None, operation=None):
+    def request(self, url_path, method='GET', payload=None, operation=None):
         """Generic HTTP method for nfvis requests."""
 
 
