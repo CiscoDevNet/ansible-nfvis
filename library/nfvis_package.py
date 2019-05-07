@@ -117,22 +117,17 @@ def run_module():
     nfvis = nfvisModule(module)
 
     if not HAS_PARAMIKO:
-        module.fail_json(
+        nfvis.fail_json(
             msg='library paramiko is required when file_pull is False but does not appear to be '
                 'installed. It can be installed using `pip install paramiko`'
         )
 
     if not HAS_SCP:
-        module.fail_json(
+        nfvis.fail_json(
             msg='library scp is required when file_pull is False but does not appear to be '
                 'installed. It can be installed using `pip install scp`'
         )
 
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    if module.check_mode:
-        return result
 
     # Get the list of existing packages
     response = nfvis.request('/config/vm_lifecycle/images?deep')
@@ -151,28 +146,29 @@ def run_module():
 
     if nfvis.params['state'] == 'present':
         if nfvis.params['name'] not in images_dict:
-            try:
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.load_system_host_keys()
-                ssh.connect(hostname=module.params['host'], port=22222, username=module.params['user'],
-                            password=module.params['password'], look_for_keys=False)
-            except paramiko.AuthenticationException:
-                module.fail_json(msg = 'Authentication failed, please verify your credentials')
-            except paramiko.SSHException as sshException:
-                module.fail_json(msg = 'Unable to establish SSH connection: %s' % sshException)
-            except paramiko.BadHostKeyException as badHostKeyException:
-                module.fail_json(msg='Unable to verify servers host key: %s' % badHostKeyException)
-            except Exception as e:
-                module.fail_json(msg=e.args)
+            if not module.check_mode:
+                try:
+                    ssh = paramiko.SSHClient()
+                    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    ssh.load_system_host_keys()
+                    ssh.connect(hostname=module.params['host'], port=22222, username=module.params['user'],
+                                password=module.params['password'], look_for_keys=False)
+                except paramiko.AuthenticationException:
+                    nfvis.fail_json(msg = 'Authentication failed, please verify your credentials')
+                except paramiko.SSHException as sshException:
+                    nfvis.fail_json(msg = 'Unable to establish SSH connection: %s' % sshException)
+                except paramiko.BadHostKeyException as badHostKeyException:
+                    nfvis.fail_json(msg='Unable to verify servers host key: %s' % badHostKeyException)
+                except Exception as e:
+                    nfvis.fail_json(msg=e.args)
 
-            try:
-                with SCPClient(ssh.get_transport()) as scp:
-                    scp.put(module.params['file'], '/data/intdatastore/uploads/{0}.tar.gz'.format(nfvis.params['name']))
-            except Exception as e:
-                module.fail_json(msg="Operation error: %s" % e)
+                try:
+                    with SCPClient(ssh.get_transport()) as scp:
+                        scp.put(module.params['file'], '/data/intdatastore/uploads/{0}.tar.gz'.format(nfvis.params['name']))
+                except Exception as e:
+                    nfvis.fail_json(msg="Operation error: %s" % e)
 
-            scp.close()
+                scp.close()
 
             payload = {'image': {}}
             payload['image']['name'] = nfvis.params['name']
@@ -203,23 +199,7 @@ def run_module():
         else:
             nfvis.result['changed'] = False
 
-
-
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
-    # FIXME: Work with nfvis so they can implement a check mode
-    # if module.check_mode:
-    #     module.exit_json(**nfvis.result)
-
-    # execute checks for argument completeness
-
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
-    module.exit_json(**nfvis.result)
+    nfvis.exit_json(**nfvis.result)
 
 def main():
     run_module()

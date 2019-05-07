@@ -121,6 +121,7 @@ def main():
                          interfaces=dict(type='list'),
                          port_forwarding=dict(type='list'),
                          config_data=dict(type='list'),
+                         tenant=dict(type='str', default='admin'),
                          )
 
     # seed the result dict in the object
@@ -145,7 +146,7 @@ def main():
     response = {}
 
     # Get the list of existing deployments
-    url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments?deep'
+    url_path = '/config/vm_lifecycle/tenants/tenant/{0}/deployments?deep'.format(nfvis.params['tenant'])
     response = nfvis.request(url_path, method='GET')
     # nfvis.result['current'] = response
     
@@ -264,13 +265,13 @@ def main():
 
 
             nfvis.result['payload'] = payload
-            url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments'
+            url_path = '/config/vm_lifecycle/tenants/tenant/{0}/deployments'.format(nfvis.params['tenant'])
             if not module.check_mode:
                 response = nfvis.request(url_path, method='POST', payload=json.dumps(payload))
             nfvis.result['changed'] = True
     else:
         if nfvis.params['name'] in deployment_dict:
-            url_path = '/config/vm_lifecycle/tenants/tenant/admin/deployments/deployment/{0}'.format(nfvis.params['name'])
+            url_path = '/config/vm_lifecycle/tenants/tenant/{0}/deployments/deployment/{1}'.format(nfvis.params['tenant'], nfvis.params['name'])
             if not module.check_mode:
                 response = nfvis.request(url_path, 'DELETE')
             nfvis.result['changed'] = True

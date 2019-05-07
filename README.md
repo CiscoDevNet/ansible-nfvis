@@ -75,6 +75,24 @@ All modules require authentication information for the NFVIS host:
 * `user`: The username with which to authenticate to the NFVIS API
 * `password`: The password with which to authenticate to the NFVIS API
 
+###
+### Get System Facts:
+```yaml
+- name: Configure system
+  nfvis_facts:
+    host: 1.2.3.4
+    user: admin
+    password: cisco
+```
+
+Returns:
+* System settings
+* CPU usage
+* VLANs
+* Bridges
+* Networks
+* Deployments
+
 ### Configure System Settings:
 ```yaml
 - name: Configure system
