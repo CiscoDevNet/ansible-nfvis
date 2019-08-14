@@ -99,7 +99,8 @@ class nfvisModule(object):
         self.result['response'] = self.response
         self.result['status'] = self.status
         self.result['url'] = self.url
-        self.result['payload'] = self.payload
+        if hasattr(self, 'payload'):
+            self.result['payload'] = self.payload
         self.result['method'] = self.method
 
         self.result.update(**kwargs)
@@ -110,7 +111,8 @@ class nfvisModule(object):
         self.result['response'] = self.response
         self.result['status'] = self.status
         self.result['url'] = self.url
-        self.result['payload'] = self.payload
+        if hasattr(self, 'payload'):
+            self.result['payload'] = self.payload
         self.result['method'] = self.method
 
         self.result.update(**kwargs)

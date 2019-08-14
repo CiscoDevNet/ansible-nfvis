@@ -124,9 +124,17 @@ def main():
     if nfvis.params['hostname'] and nfvis.params['hostname'].split('.')[0] != payload['settings']['hostname']:
         payload['settings']['hostname'] = nfvis.params['hostname'].split('.')[0]
         nfvis.result['what_changed'].append('hostname')
-    if nfvis.params['trusted_source'] and (('trusted-source' in payload['settings'] and nfvis.params['trusted_source'] != payload['settings']['trusted-source']) or ('trusted-source' not in payload['settings'])):
-        payload['settings']['trusted-source'] = nfvis.params['trusted_source']
-        nfvis.result['what_changed'].append('trusted_source')
+    if nfvis.params['trusted_source']:
+        ip_receive_acl = []
+        for network in nfvis.params['trusted_source']:
+            ip_receive_acl.append({'source': network, 'action': 'accept', 'priority': 0})
+        if 'ip-receive-acl' in payload['settings']['ip-receive-acls']:
+            if payload['settings']['ip-receive-acls']['ip-receive-acl'] != ip_receive_acl:
+                nfvis.result['what_changed'].append('trusted_source')
+                payload['settings']['ip-receive-acls'] = {'ip-receive-acl': ip_receive_acl}
+        else:
+            nfvis.result['what_changed'].append('trusted_source')
+            payload['settings']['ip-receive-acls'] = {'ip-receive-acl': ip_receive_acl}
     if nfvis.params['dpdk'] and (('dpdk' in payload['settings'] and nfvis.params['dpdk'] != payload['settings']['dpdk']) or ('dpdk' not in payload['settings'])):
         payload['settings']['dpdk'] = ['disable', 'enable'][nfvis.params['dpdk'] == True]
         nfvis.result['what_changed'].append('dpdk')

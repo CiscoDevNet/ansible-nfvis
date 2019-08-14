@@ -34,6 +34,11 @@
     content: "{{ lookup('template', 'package.mf.j2') }}"
     dest: "{{ nfvis_temp_dir }}/{{ package_name }}/package.mf"
 
+- name: Create {{ nfvis_package_dir }}
+  file:
+    path: "{{ nfvis_package_dir }}"
+    state: directory
+
 - name: Create package {{ nfvis_package_dir }}/{{ package_name }}.tar.gz
   archive:
     path: "{{ nfvis_temp_dir }}/{{ package_name }}/*"
