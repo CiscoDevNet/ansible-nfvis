@@ -127,7 +127,7 @@ def main():
     if nfvis.params['trusted_source']:
         ip_receive_acl = []
         for network in nfvis.params['trusted_source']:
-            ip_receive_acl.append({'source': network, 'action': 'accept', 'priority': 0})
+            ip_receive_acl.append({'source': network, 'action': 'accept', 'priority': 0, 'service': ['https', 'icmp', 'netconf', 'scpd', 'snmp', 'ssh']})
         if 'ip-receive-acls' in payload['settings'] and 'ip-receive-acl' in payload['settings']['ip-receive-acls']:
             if payload['settings']['ip-receive-acls']['ip-receive-acl'] != ip_receive_acl:
                 nfvis.result['what_changed'].append('trusted_source')
