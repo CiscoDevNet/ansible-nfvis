@@ -128,7 +128,7 @@ def main():
         ip_receive_acl = []
         for network in nfvis.params['trusted_source']:
             ip_receive_acl.append({'source': network, 'action': 'accept', 'priority': 0})
-        if 'ip-receive-acl' in payload['settings']['ip-receive-acls']:
+        if 'ip-receive-acls' in payload['settings'] and 'ip-receive-acl' in payload['settings']['ip-receive-acls']:
             if payload['settings']['ip-receive-acls']['ip-receive-acl'] != ip_receive_acl:
                 nfvis.result['what_changed'].append('trusted_source')
                 payload['settings']['ip-receive-acls'] = {'ip-receive-acl': ip_receive_acl}
@@ -150,9 +150,13 @@ def main():
             payload['settings']['mgmt'] = {}
             payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
             nfvis.result['what_changed'].append('mgmt')
-    if nfvis.params['default_gw'] and nfvis.params['default_gw'] != payload['settings']['default-gw']:
-        payload['settings']['default-gw'] = nfvis.params['default_gw']
-        nfvis.result['what_changed'].append('default_gw')
+    if nfvis.params['default_gw']:
+        if 'default-gw' in payload['settings'] and payload['settings']['default-gw'] != nfvis.params['default_gw']:
+            payload['settings']['default-gw'] = nfvis.params['default_gw']
+            nfvis.result['what_changed'].append('default_gw')
+        elif 'default-gw' not in payload['settings']:
+            payload['settings']['default-gw'] = nfvis.params['default_gw']
+            nfvis.result['what_changed'].append('default_gw')
     if nfvis.result['what_changed']:
         nfvis.result['changed'] = True
         url_path = '/config/system/settings'
