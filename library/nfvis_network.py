@@ -102,7 +102,7 @@ def main():
                          sriov=dict(type='bool', default=False),
                          native_tagged=dict(type='bool'),
                          native_vlan=dict(type='str'),
-                         vlan=dict(type='str'),
+                         vlan=dict(type='int'),
                          )
 
 
@@ -147,7 +147,6 @@ def main():
         pass
 
     if nfvis.params['state'] == 'present':
-
         if nfvis.params['name'] not in network_dict:
 
             # Construct the payload
@@ -187,9 +186,15 @@ def main():
                     payload['network']['trunk'] = False
                     nfvis.result['what_changed'].append('trunk')
                 if nfvis.params['vlan']:
-                    if 'vlan' not in payload['network'] or nfvis.params['vlan'] not in payload['network']['vlan']:
+                    if 'vlan' not in payload['network']:
                         payload['network']['vlan'] = nfvis.params['vlan']
-                        nfvis.result['what_changed'].append('vlan')
+                        nfvis.result['what_changed'].append('vlan1')
+                    elif isinstance(payload['network']['vlan'], list) and str(nfvis.params['vlan']) not in payload['network']['vlan']:
+                        payload['network']['vlan'] = nfvis.params['vlan']
+                        nfvis.result['what_changed'].append('vlan2')
+                    elif isinstance(payload['network']['vlan'], str) and nfvis.params['vlan'] != int(payload['network']['vlan']):
+                        payload['network']['vlan'] = nfvis.params['vlan']
+                        nfvis.result['what_changed'].append('vlan3')
 
             if nfvis.params['sriov']:
                 if 'sriov' not in payload['network'] or nfvis.params['sriov'] != payload['network']['sriov']:
