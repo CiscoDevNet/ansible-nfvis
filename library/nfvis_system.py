@@ -143,9 +143,15 @@ def main():
             payload['settings']['mgmt']['dhcp'] = None
             nfvis.result['what_changed'].append('mgmt')
         else:
-            if 'address' not in payload['settings']['mgmt']['ip'] or payload['settings']['mgmt']['ip']['address'] != str(mgmt_ip.ip) or 'netmask' not in payload['settings']['mgmt']['ip'] or payload['settings']['mgmt']['ip']['netmask'] != str(mgmt_ip.netmask):
+            if 'address' not in payload['settings']['mgmt']['ip'] or 'netmask' not in payload['settings']['mgmt']['ip']:
                 payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
-                nfvis.result['what_changed'].append('mgmt')
+                nfvis.result['what_changed'].append('mgmt_added')
+            elif payload['settings']['mgmt']['ip']['address'] != str(mgmt_ip.ip):
+                payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
+                nfvis.result['what_changed'].append('mgmt_ip')
+            elif payload['settings']['mgmt']['ip']['netmask'] != str(mgmt_ip.netmask):
+                payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}
+                nfvis.result['what_changed'].append('mgmt_netmask')
     else:
             payload['settings']['mgmt'] = {}
             payload['settings']['mgmt']['ip'] = {'address': str(mgmt_ip.ip), 'netmask': str(mgmt_ip.netmask)}

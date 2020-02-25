@@ -142,7 +142,7 @@ def main():
                 for port in nfvis.params['ports']:
                     payload['bridge']['port'].append( {'name': port} )
 
-            payload['bridge']['vlan'] = None
+            payload['bridge'].pop('vlan', None)
             if nfvis.params['vlan']:
                 payload['bridge']['vlan'] = nfvis.params['vlan']
 

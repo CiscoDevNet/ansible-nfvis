@@ -152,7 +152,7 @@ def run_module():
                     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                     ssh.load_system_host_keys()
                     ssh.connect(hostname=module.params['host'], port=22222, username=module.params['user'],
-                                password=module.params['password'], look_for_keys=False)
+                                password=module.params['password'], look_for_keys=False, timeout=module.params['timeout'])
                 except paramiko.AuthenticationException:
                     nfvis.fail_json(msg = 'Authentication failed, please verify your credentials')
                 except paramiko.SSHException as sshException:

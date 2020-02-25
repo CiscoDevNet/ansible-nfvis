@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<image_properties>
+    <vnf_type>OTHER</vnf_type>
+    <name>{{ package_name }}</name>
+    <version>{{ package_version }}</version>
+    <bootup_time>600</bootup_time>
+    <root_file_disk_bus>virtio</root_file_disk_bus>
+    <root_image_disk_format>qcow2</root_image_disk_format>
+    <vcpu_min>1</vcpu_min>
+    <vcpu_max>8</vcpu_max>
+    <memory_mb_min>1024</memory_mb_min>
+    <memory_mb_max>8192</memory_mb_max>
+    <vnic_max>8</vnic_max>
+    <vnic_names>vnics:1:eth1</vnic_names>
+    <root_disk_gb_min>8</root_disk_gb_min>
+    <root_disk_gb_max>16</root_disk_gb_max>
+    <console_type_serial>true</console_type_serial>
+    <monitoring_supported>true</monitoring_supported>
+    <monitoring_methods>ICMPPing</monitoring_methods>
+    <low_latency>false</low_latency>
+    <privileged_vm>true</privileged_vm>
+    <bootstrap_cloud_init_drive_type>disk</bootstrap_cloud_init_drive_type>
+    <nocloud>true</nocloud>
+    <bootstrap_file_1>user-data</bootstrap_file_1>
+    <profiles>
+    	<profile>
+	    <name>fedora-small</name>
+            <description>fedora-small</description>
+	    <vcpus>1</vcpus>
+            <memory_mb>1024</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+	</profile>
+    	<profile>
+	    <name>fedora-medium</name>
+            <description>fedora-medium</description>
+	    <vcpus>2</vcpus>
+            <memory_mb>4096</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+	</profile>
+    	<profile>
+	    <name>fedora-large</name>
+            <description>fedora-large</description>
+	    <vcpus>4</vcpus>
+            <memory_mb>8192</memory_mb>
+            <root_disk_mb>8192</root_disk_mb>
+	</profile>
+    </profiles>
+    <default_profile>fedora-small</default_profile>
+</image_properties>
